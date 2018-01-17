@@ -1,0 +1,24 @@
+Package: sumFREGAT
+Title: Fast Region-Based Association Tests on Summary Statistics
+Version: 1.0.0
+Author: Nadezhda M. Belonogova <belon@bionet.nsc.ru> and 
+    Gulnara R. Svishcheva <gulsvi@bionet.nsc.ru>
+    with contributions from:
+    Seunggeun Lee (kernel functions), Pierre Lafaye de Micheaux ('davies' method),
+    Thomas Lumley ('kuonen' method), and James O. Ramsay (functional data analysis functions)
+Maintainer: Nadezhda M. Belonogova <belon@bionet.nsc.ru>
+Depends: R (>= 3.0.0)
+Imports: methods, Matrix, splines
+Suggests: seqminer
+Repository: CRAN
+Description: An adaptation of classical region/gene-based association analysis
+    techniques that uses summary statistics (P values and effect sizes)
+    and correlations between genetic variants as input. It is a tool to perform
+    the most common and efficient gene-based tests on the results of genome-wide
+    association (meta-)analyses without having the original genotypes and
+    phenotypes at hand.
+License: GPL-3
+LazyLoad: yes
+NeedsCompilation: yes
+Packaged: 2018-01-17 04:43:30 UTC; lima
+Date/Publication: 2018-01-17 11:55:00 UTC
