@@ -6,9 +6,15 @@ import(splines)
 importFrom("methods", "as", "is")
 importFrom("stats", "dbeta", "dchisq", "glm",
              "integrate", "knots", "pf", "qnorm",
-             "pchisq", "pnorm", "qchisq", "uniroot", "var", "weights")
+             "pchisq", "pnorm", "qchisq", "uniroot",
+             "var", "weights", 'optimize')
 importFrom("utils", "capture.output", "read.table", "write.table")
+
+export(simpleM)
+export(minp)
 export(SKAT)
+export(SKATO)
+export(sumchi)
 export(BT)
 export(FLM)
 export(MLR)

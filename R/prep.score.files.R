@@ -1,29 +1,150 @@
-# sumFREGAT (2017) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
-prep.score.files <- function(input.file, output.file.prefix) {#, annotate = FALSE, path.to.reference, annotation.param) { # 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'P', 'BETA', 'EAF'
+prep.score.files <- function(input.file, reference.file = '', output.file.prefix) {#, annotate = FALSE, path.to.reference, annotation.param) { # 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'P', 'BETA', 'EAF'
 	df <- read.table(input.file, header = TRUE, as.is = TRUE)
 	colnames(df) <- toupper(colnames(df))
-	if (any(colnames(df) %in% c('CHR', 'CHROMOSOME'))) {
-		colnames(df)[colnames(df) %in% c('CHR', 'CHROMOSOME')] <- 'CHROM'}
-	if (any(colnames(df) %in% c('POSITION', 'POSITIONS', 'MAP'))) {
-		colnames(df)[colnames(df) %in% c('POSITION', 'POSITIONS', 'MAP')] <- 'POS'}
-	if (any(colnames(df) %in% c('PVALUE', 'PV', 'PVAL', 'P.VALUE', 'P_VALUE'))) {
-		colnames(df)[colnames(df) %in% c('PVALUE', 'PV', 'PVAL', 'P.VALUE', 'P_VALUE')] <- 'P'}
-	ColNames <- c('CHROM', 'POS', 'ID', 'REF', 'ALT', 'P', 'BETA', 'EAF')
+	v <- which(colnames(df) %in% c('CHR', 'CHROMOSOME'))
+	if (length(v) == 1) colnames(df)[v] <- 'CHROM'
+	v <- which(colnames(df) %in% c('POSITION', 'POSITIONS', 'MAP'))
+	if (length(v) == 1) colnames(df)[v] <- 'POS'
+	v <- which(colnames(df) %in% c('PVALUE', 'PV', 'PVAL', 'P.VALUE', 'P_VALUE'))
+	if (length(v) == 1) colnames(df)[v] <- 'P'
+	v <- which(colnames(df) %in% c('RSID', 'RS.ID', 'RS_ID', 'SNP.ID', 'SNP_ID'))
+	if (length(v) == 1) colnames(df)[v] <- 'ID'
+	v <- which(colnames(df) == 'EA')
+	if (length(v) == 1) colnames(df)[v] <- 'EFFECT.ALLELE'
+	
+	# ID and PVAL mandatory
+	# others from user file or 1KG
+	
+	ColNames <- c('ID', 'P')
 	v <- !ColNames %in% colnames(df)
-	if (sum(v)) stop(paste("Some columns are missing:", paste(ColNames[v], collapse = ', ')))
-	df$Z <- qnorm(df$P / 2, lower.tail = FALSE) * sign(df$BETA)
-	df$SE.BETA <- df$BETA / df$Z
-	#df$Z <- df$BETA / df$SE.BETA
+	if (sum(v)) stop(paste("Mandatory column(s) missing:", paste(ColNames[v], collapse = ', ')))
+	
+	
+	ColNames <- c('CHROM', 'POS', 'EAF')
+	v <- !ColNames %in% colnames(df)
+	take <- ColNames[v]
+	if (sum(v)) print(paste("Columns that are missing and will be looked for in reference data:", paste(take, collapse = ', ')))
+	take[take == 'EAF'] <- 'AF'
+
+	if ('BETA' %in% colnames(df)) {
+		if ('EFFECT.ALLELE' %in% colnames(df)) {
+			if(!'REF' %in% colnames(df)) take <- c(take, 'REF', 'ALT')
+		} else {
+			print("Effect allele column not found, effect sizes cannot be linked")
+		}
+	} else {
+		print("Effect sizes (beta) column not found")
+	}
+	if (length(take) > 0) {
+		if (file.exists(reference.file)) {
+			print('Reading reference file...')
+			ref <- get(load(reference.file))
+			if ('CHROM' %in% take & !'CHROM' %in% colnames(ref)) stop ("No CHROM column in reference data")
+			if ('POS' %in% take & !'POS' %in% colnames(ref)) stop ("No POS column in reference data")
+			v <- match(df$ID, ref$ID)
+			
+			if (!sum(v, na.rm = TRUE)) {
+				if (all(c('CHROM', 'POS') %in% colnames(df))) {
+					df$ind <- paste(df$CHROM, df$POS, sep = ':')
+					print('No IDs matching, trying to link through map data...')
+					ref$ind <- paste(ref$CHROM, ref$POS, sep = ':')
+					v <- match(df$ind, ref$ind)
+					if (sum(!is.na(v)) < (length(v) / 2)) {
+						print("Too few variants match between input file and reference data")
+						v <- NA
+					}
+				}
+			}
+			if (sum(v, na.rm = TRUE)) {
+				print(paste(sum(!is.na(v)), "of", length(v), "variants found in reference"))
+				vv <- take %in% colnames(ref)
+				if (sum(!vv)) {
+					print(paste("Columns that are missing in reference data:", paste(take[!vv], collapse = ', ')))
+					if ('REF' %in% take & !'REF' %in% colnames(ref)) print ("Reference alleles not found, effect sizes cannot be linked")
+					if ('AF' %in% take & !'AF' %in% colnames(ref)) print ("Allele frequencies not found, some weighted tests will be unavailable")
+				}
+				df <- cbind(df, ref[v, take[vv]])
+			}
+		} else {
+			if (reference.file != '') print ("Reference file not found")
+			if (any(c('CHROM', 'POS') %in% take)) stop ("Cannot find map data (chromosome, position)")
+		}
+	}
+
+	if ('REF' %in% colnames(df)) {
+		v <- df$EFFECT.ALLELE == df$REF
+		df[is.na(v), 'BETA'] <- NA
+		if ('EAF' %in% colnames(df)) df[is.na(v), 'EAF'] <- NA
+		if ('ALT' %in% colnames(df)) {
+			vv <- !v & df$EFFECT.ALLELE != df$ALT
+			if (sum(vv, na.rm = T)) {
+				print(paste("Effect alleles do not match reference/alternative alleles for", sum(vv), "variant(s)"))
+				df[vv, 'BETA'] <- NA
+				if ('EAF' %in% colnames(df)) df[vv, 'EAF'] <- NA
+			}
+		}
+		#here we go
+		v <- which(v)
+		df$BETA[v] <- -df$BETA[v]
+		if ('EAF' %in% colnames(df)) {
+			df$EAF[v] <- 1 - df$EAF[v]
+			colnames(df)[colnames(df) == 'EAF'] <- 'AF'
+		}
+		print(paste('Effect sizes recoded for', length(v), 'variant(s)'))
+	}
+
+	df$Z <- qnorm(df$P / 2, lower.tail = FALSE)
+	if ('BETA' %in% colnames(df)) {
+		df$Z <- df$Z * sign(df$BETA)
+		df$SE.BETA <- df$BETA / df$Z
+	}
+
 	df <- df[order(df[, 'POS']), ]
 	df <- df[order(df[, 'CHROM']), ]
+	if (!'ALT' %in% colnames(df)) df$ALT <- NA
+	if (!'REF' %in% colnames(df)) df$REF <- NA
 	vcf <- df[, c('CHROM', 'POS', 'ID', 'REF', 'ALT')]
 	colnames(vcf)[1] <- '#CHROM'
 	vcf$POS <- format(vcf$POS, scientific = FALSE)
 	vcf$POS <- gsub(' ', '', vcf$POS)
 	vcf <- cbind(vcf, QUAL = '.', FILTER = '.')
-	vcf$INFO <- paste('EAF=', df$EAF, ';Z=', df$Z, ';SE.Beta=', df$SE.BETA, sep = '')
-	title <- c('##INFO=<ID=EAF,Number=1,Type=Float,Description="Effect allele frequency">', '##INFO=<ID=Z,Number=1,Type=Float,Description="Z statistics">', '##INFO=<ID=SE.Beta,Number=1,Type=Float,Description="SE Beta">')
+	vcf$INFO <- paste0('Z=', df$Z)
+	title <- c('##INFO=<ID=Z,Number=1,Type=Float,Description="Z statistics">')
+
+	if ('BETA' %in% colnames(df)) {
+		vcf$INFO <- paste0(vcf$INFO, ';SE.Beta=', df$SE.BETA)
+		title <- c(title, '##INFO=<ID=SE.Beta,Number=1,Type=Float,Description="SE Beta">')
+	}
+
+	if ('EAF' %in% colnames(df)) colnames(df)[colnames(df) == 'EAF'] <- 'AF'
+	if ('AF' %in% colnames(df)) {
+		vcf$INFO <- paste0(vcf$INFO, ';AF=', df$AF)
+		title <- c(title, '##INFO=<ID=AF,Number=1,Type=Float,Description="Frequency of alternative allele">')
+		print(paste0('Allele frequencies found and linked'))
+	}
+
+	a <- grep('ANNO', colnames(df))
+	if (length(a) == 1) {
+		vcf$INFO <- paste0(vcf$INFO, ';ANNO=', df[, a])
+		title <- c(title, '##INFO=<ID=ANNO,Number=1,Type=String,Description="Variants annotations">')
+		print(paste0('Annotations ("', colnames(df)[a], '") found and linked'))
+	}
+
+	a <- grep('\\bW', colnames(df))
+	if (length(a) == 1) {
+		vcf$INFO <- paste0(vcf$INFO, ';W=', df[, a])
+		title <- c(title, '##INFO=<ID=W,Number=1,Type=Float,Description="Weights">')
+		print(paste0('User weights ("', colnames(df)[a], '") found and linked'))
+	}
+
+	a <- grep('\\bN', colnames(df))
+	if (length(a) == 1) {
+		vcf$INFO <- paste0(vcf$INFO, ';N=', df[, a])
+		title <- c(title, '##INFO=<ID=N,Number=1,Type=Integer,Description="Sample size">')
+		print(paste0('Sample size info ("', colnames(df)[a], '") found and linked'))
+	}
 
 	if (!missing(output.file.prefix)) {
 		fn <- paste(output.file.prefix, 'vcf', sep = '.')
@@ -41,97 +162,3 @@ prep.score.files <- function(input.file, output.file.prefix) {#, annotate = FALS
 
 }
 
-# annotate <- function (input.file, output.file.prefix, path.to.reference, annotation.param) {
-	# if (!missing(output.file.prefix)) {
-		# fn.anno <- paste(output.file.prefix, 'anno.vcf', sep = '.')
-	# } else {
-		# fn.anno <- paste(input.file, 'anno.vcf', sep = '.')
-	# }
-	# if (missing(path.to.reference)) {
-		# path.to.reference <- ''
-	# } else {
-		# if (substr(path.to.reference, nchar(path.to.reference), nchar(path.to.reference)) != '/') path.to.reference <- paste0(path.to.reference, '/')
-	# }
-	# if (requireNamespace("seqminer", quietly = TRUE)) {
-
-		# if (missing(annotation.param)) annotation.param <- seqminer::makeAnnotationParameter(list(
-			# reference = paste0(path.to.reference, "hs37d5.fa"),
-			# geneFile = paste0(path.to.reference, "refFlat_hg19.txt.gz"),
-			# codonFile = paste0(path.to.reference, "codon.txt"),
-			# priorityFile = paste0(path.to.reference, "priority.txt")))
-##		annotation.param -> param
-##		seqminer::annotateVcf(fn, fn.anno, params = param)
-		# annotateVcfMy(fn, fn.anno, annotation.param)
-		# fn.anno.gz <- paste(fn.anno, 'gz', sep = '.')
-		# if (file.exists(fn.anno.gz)) system(paste('rm', fn.anno.gz))
-		# system(paste('bgzip', fn.anno))
-		# system(paste('tabix -p vcf', fn.anno.gz))
-		# print(paste('Annotated file', fn.anno.gz, 'has been created'))
-		# } else { stop(paste("Please install 'seqminer' package to process VCF file", sep = '')) }
-# }
-
-# annotateVcfMy <- function (inVcf, outVcf, params)
-##a function from seqminer, with changes
-# {
-   # params$inputFormat = "vcf"
-##  param <- makeAnnotationParameter(param)
-##  res <- validateAnnotationParameter(param)
-   # params <- seqminer::makeAnnotationParameter(params)
-   # res <- seqminer::validateAnnotationParameter(params)
-   # if (!res[[1]]) {
-       # cat(paste(res[[2]], collapse = "\\n"))
-       # stop("Stop due to critical error")
-   # }
-   # seqminer:::verifyFilename(inVcf, outVcf)
-   # storage.mode(inVcf) <- "character"
-   # storage.mode(outVcf) <- "character"
-   # .Call("anno", inVcf, outVcf, params, PACKAGE = 'seqminer')
-   # invisible(NULL)
-# }
-
-# download.annotation.resource <- function(outputDirectory)
-## a function from 'seqminer' package
-# {
- # outDir = outputDirectory
- # prepare a writable dir
- # if (!seqminer::dir.exists(outDir)) {
-   # message(gettextf("Create output directory: %s", outDir))
-   # seqminer::dir.create(outDir, recursive = TRUE)
- # }
- # if (!seqminer:::isDirWritable(outDir)) {
-   # stop(gettextf("Unable to write to directory: %s", outDir))
- # }
-
- # download function
- # download <- function(url) {
-   # fn <- basename(url)
-    # destfile <- file.path(outDir, fn)
-    # if (file.exists(destfile)) {
-      # warning(gettextf("Overwriting %s", fn))
-    # }
-    # utils::download.file(url, destfile)
-  # }
-  # download resources
-  # message("Begin download TabAnno resource files (human hg19)...")
-
-
-  # message("Download reference file and its index:")
-  # download("https://qbrc.swmed.edu/zhanxw/software/anno/resources/hs37d5.fa")
-  # download("https://qbrc.swmed.edu/zhanxw/software/anno/resources/hs37d5.fa.fai")
-
-  # message("Download gene definition:")
-  # download("https://qbrc.swmed.edu/zhanxw/software/anno/resources/refFlat_hg19.txt.gz")
-
-  # message("Download TabAnno codon definition and annotation priority files:")
-  # download("https://qbrc.swmed.edu/zhanxw/software/anno/codon.txt")
-  # download("https://qbrc.swmed.edu/zhanxw/software/anno/priority.txt")
-
-  # message("Download completed")
-  # message(gettextf("You can begin to use it:"))
-  # message(gettextf(" param <- makeAnnotationParameter(list(reference = \"%s\", geneFile = \"%s\", codonFile = \"%s\", priorityFile = \"%s\" ))",
-                   # file.path(outDir, "hs37d5.fa"),
-                   # file.path(outDir, "refFlat_hg19.txt.gz"),
-                   # file.path(outDir, "codon.txt"),
-                   # file.path(outDir, "priority.txt")))
-  # invisible(NULL)
-# }

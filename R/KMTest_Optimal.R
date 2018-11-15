@@ -30,11 +30,11 @@ SKAT_Optimal_Param<-function(Z1,r.all){
 
 	# W3.1 Term : tau1 * chisq_1
 	tau<-rep(0,r.n)
+	sumcof12 <- sum(cof1^2);sumz_mean2<-sum(z_mean^2)
 	for(i in 1:r.n){
 		r.corr<-r.all[i]
-		#term1<-p.m*r.corr + cof1^2 * (1-r.corr)
-		term1<-p.m^2*r.corr + sum(cof1^2) * (1-r.corr)
-		tau[i]<-sum(term1) *  sum(z_mean^2)
+		term1<-p.m^2*r.corr + sumcof12 * (1-r.corr)
+		tau[i]<-sum(term1) *  sumz_mean2
 	}
 
 	out<-list(MuQ=MuQ,VarQ=VarQ,KerQ=KerQ,lambda=lambda,VarRemain=W3.3.item,Df=Df,tau=tau)
@@ -153,7 +153,7 @@ SKAT_Optimal_Integrate_Func_Kuonen<-function(x,pmin.q,param.m,r.all){
 	for(i in 1:length(x)){
 		#a1<<-temp.min[i]
 		min1<-temp.min[i]
-		if(min1 > sum(param.m$lambda) * 10^4){
+		if(min1 > sum(param.m$lambda) * 10000){
 			temp<-0
 		} else {
 			min1.temp<- min1 - param.m$MuQ			
@@ -174,8 +174,6 @@ SKAT_Optimal_Integrate_Func_Kuonen<-function(x,pmin.q,param.m,r.all){
 
 # add pmin on 02-13-2013 
 SKAT_Optimal_PValue_Davies_Kuonen<-function(pmin.q,param.m,r.all, pmin=NULL, method, acc, lim){
-
-	#re<-try(integrate(SKAT_Optimal_Integrate_Func_Davies, lower=0, upper=30, subdivisions=500, pmin.q=pmin.q,param.m=param.m,r.all=r.all,abs.tol = 10^-15), silent = TRUE)
 
 	if (method == 'kuonen') { re<-try(integrate(SKAT_Optimal_Integrate_Func_Kuonen, lower=0, upper=40, subdivisions=1000, pmin.q=pmin.q,param.m=param.m,r.all=r.all,abs.tol = 10^-25), silent = TRUE)
 	} else { re<-try(integrate(SKAT_Optimal_Integrate_Func_Davies, lower=0, upper=40, subdivisions=1000, pmin.q=pmin.q,param.m=param.m,r.all=r.all,acc=acc,lim=lim,abs.tol = 10^-25), silent = TRUE) }
@@ -200,12 +198,6 @@ SKAT_Optimal_PValue_Davies_Kuonen<-function(pmin.q,param.m,r.all, pmin=NULL, met
 
 SKAT_Optimal_Integrate_Func_Liu<-function(x,pmin.q,param.m,r.all){
 	
-	#x<-1
-	#print(length(x))
-	#print(x)
-	#X1<<-x
-	#x<-X1
-
 	n.r<-length(r.all)
 	n.x<-length(x)
 
@@ -234,32 +226,55 @@ SKAT_Optimal_PValue_Liu<-function(pmin.q,param.m,r.all, pmin=NULL){
 			pvalue = pmin *length(r.all)
 		}
 	}
-	
 	return(pvalue)
 
 }
 
 SKAT_Optimal_Get_Pvalue<-function(Q.all, Z1, r.all, method, acc, lim){
-
-	n.r<-length(r.all)
-	n.q<-dim(Q.all)[1]
-	p.m<-dim(Z1)[2]
-
+#### Z1: kernel matrix ^ 0.5
+	n.r<-length(r.all)   # the number of rhos
+	n.q<-dim(Q.all)[1]   # the number of Qs
+	p.m<-dim(Z1)[2]      # the number of ms
+	
+    Z1e <-  rowSums(Z1)    
+	Z1e_2 <- Z1e %*% t(Z1e)   #matrix
+	Z1_2 <- Z1 %*% t(Z1); ZZZ <- Z1_2 - Z1e_2
+	AS<-t(Z1) %*% Z1
+	SumElem <- sum(AS)
 	lambda.all<-list()
-	for(i in 1:n.r){
-		r.corr<-r.all[i]
-		R.M<-diag(rep(1-r.corr,p.m)) + matrix(rep(r.corr,p.m*p.m),ncol=p.m)
-		if (r.corr < 1) { L<-chol(R.M,pivot=TRUE)
+
+	for(i in 1:n.r){ ######################
+	 r.corr<-r.all[i]
+	 K1<- Z1_2 - r.corr * ZZZ
+	  
+	 
+	 if( p.m >= 5000){         # approximation works when the number of genetic variants > 500 !!!!
+	 
+        if (i==1) {
+			lambda.all[[1]] <- Get_Lambda(K1)   # all lambdas under r.corr == 0
+	    } else if (i<n.r){
+			lambda.all[[i]]    <- lambda.all[[1]] * (1.-r.corr) 			   #  (1-ro)*eigen(U)$val[2]
+			lambda.all[[i]][1] <- lambda.all[[1]][1]*(1.-r.corr) + r.corr*SumElem  #  (1-ro)*eigen(U)$val[1] + ro*sum(U)
 		} else {
-		L <- R.M / sqrt(p.m)
+		 lambda.all[[n.r]] = 0
+         lambda.all[[n.r]][1] = SumElem		
 		}
-		Z2<- Z1 %*% t(L)
-		K1<-t(Z2) %*% Z2
+		
+	    } else {
+			if (i<n.r){
+				lambda.all[[i]] <- Get_Lambda(K1)
+			} else{
+				lambda.all[[n.r]] = 0
+				lambda.all[[n.r]][1] = SumElem	
+		}
+		}
+	}	#################
 
-		lambda.all[[i]]<-Get_Lambda(K1)
-		 
-	}
-
+	    
+	 
+		
+	
+###---------------------------
 	# Get Mixture param 
 	param.m<-SKAT_Optimal_Param(Z1,r.all)
 	Each_Info<-SKAT_Optiaml_Each_Q(param.m, Q.all, r.all, lambda.all, method=method)
