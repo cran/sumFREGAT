@@ -1,14 +1,17 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2020) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
-get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list, reference.matrix, gen.var.weights = FALSE, fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, test) {
+get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list, reference.matrix, gen.var.weights = FALSE, fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, test) {
 
+	uw <- check.list[length(check.list)]
+	if (uw == 'Z') uw <- 0
 	### read gene info
-	
+	#browser()
 	df <- c()
 	for (anno in anno.type) {
-		df0 <- read.vcf.info(score.file, gene.file, gene, anno)
+		df0 <- read.vcf.info(score.file, gene.file, gene, anno, uw, quiet)
 		if (is.null(df0$Z)) next
-		df <- rbind(df, as.data.frame(df0[1:6], stringsAsFactors = FALSE)) # POS, ID, AF, EAF, SE.Beta, Z, weights
+		df0$sampleId <- NULL
+		df <- rbind(df, as.data.frame(df0, stringsAsFactors = FALSE)) # POS, ID, AF, EAF, SE.Beta, Z, weights
 	}
 	if (is.null(df)) {
 		warning("No variants to analyze in gene ", gene, ", skipped")
@@ -16,9 +19,12 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 	}
 
 	m0 <- dim(df)[1]
-
+	df[df == 'NA'] <- NA
 	### load/read the correlation matrix from file
 
+	doU <- ifelse (test != 'ACAT', 1, 0)
+	
+	if (doU) {
 	cor.file <- paste0(cor.path, gene, cor.file.ext)
 	if (!file.exists(cor.file)) {
 		warning("No correlation file for gene ", gene, ", skipped")
@@ -27,7 +33,11 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 	if (cor.file.ext %in% c('.RDa', '.RData')) {
 		U <- get(load(cor.file))
 	} else {
-		U <- read.table(cor.file)
+		if (requireNamespace("data.table", quietly = TRUE)) {
+			U <- data.table::fread(cor.file, data.table = FALSE)
+		} else {
+			U <- read.table(cor.file)
+		}
 	}
 	if (length(U) == 1) {
 		warning("No matching variants in correlation file for gene ", gene, ", skipped")
@@ -59,18 +69,23 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 	df <- df[!is.na(v), ]
 	v <- v[!is.na(v)]
 	U <- as.matrix(U[v, v])
+	
+	} # end U
 
-	# compatibility, remove this later
+#browser()
+	# compatibility, remove this later, as well as reading EAF from file
 	if ('AF' %in% check.list) {
-		if (df[1, 'AF'] == '') {
-			df[, 'AF'] <- df[, 'EAF']
-			df$EAF <- NULL
+		if (!is.na(df[1, 'AF'])) {
+			if (df[1, 'AF'] == '') {
+				df[, 'AF'] <- df[, 'EAF']
+				df$EAF <- NULL
+			}
 		}
 	}
 
 	# exclude NA by all items required
 
-	for (i in check.list) { # can be: Z, W, N, SE.Beta, AF, POS
+	for (i in check.list) { # can be: SE.Beta, AF, POS, Z, W or other character
 		df[, i] <- as.numeric(df[, i])
 		v <- !is.na(df[, i])
 		if (sum(v) == 0) {
@@ -78,11 +93,20 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 			return(list(m0 = m0, df = NULL))
 		}
 		df <- df[v, ]
-		U <- as.matrix(U[v, v])
+		if (doU) U <- as.matrix(U[v, v])
 	}
 	if (sum(v) == 1) return(list(m0 = m0, df = df))
 
-	if (!'W' %in% check.list) df$w <- rep(1, dim(df)[1])
+	if (uw == 0) {
+		df$w <- rep(1, dim(df)[1])
+	} else {
+		colnames(df)[colnames(df) == uw] <- 'w'
+		if (uw != 'W') {
+			if (test %in% c('SKAT', 'ACAT')) {
+				df$w <- sqrt(df$w)
+			}
+		}
+	}
 
 	# check AF
 
@@ -96,7 +120,7 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 			return(list(m0 = m0, df = NULL))
 		}
 		df <- df[v, ]
-		U <- as.matrix(U[v, v])
+		if (doU) U <- as.matrix(U[v, v])
 
 		### flip to minor for BT, SKAT
 
@@ -120,7 +144,12 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 	if (gen.var.weights == "se.beta") {
 		df$w <- df$w / df$SE.Beta
 	} else if (gen.var.weights == "af") { # add this
-		df$w <- df$w * sqrt(2. * df$AF * (1.-df$AF))  #Beta-weighted genotype under HWE
+		df$w <- df$w * sqrt(2. * df$AF * (1. - df$AF))  #Beta-weighted genotype under HWE
+	}
+	if (!is.na(uw)) {
+		if (uw != 'W' & test == 'ACAT') {
+			df$w <- df$w ^ 2
+		}
 	}
 
 	# exclude linearly dependent variants for MLR
@@ -166,18 +195,21 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 		if (reference.matrix & dim(U)[1] > 1) U <- reference_sample(U, df$Z, fun)
 	}
 
-	U[U == 1] <- 0.999
-	U[U == -1] <- -0.999
-	diag(U) <- 1
-
-	return(list(m0 = m0, df = df, U = U, n = n))
+	if (doU) {
+		U[U == 1] <- 0.999
+		U[U == -1] <- -0.999
+		#diag(U) <- 1
+	} else { U <- NULL }
+	
+	list(m0 = m0, df = df, U = U, n = n)
+	
 }
 
-read.vcf.info <- function(data, gene.file, gene, anno.type) {
-	if (getRversion() >= "3.2.0") {
-		invisible(capture.output(invisible(capture.output(info <- seqminer::readVCFToListByGene(data, gene.file, gene, anno.type, c('ID', 'POS'), c('AF', 'EAF', 'Z', 'SE.Beta', 'weights'), ''), type = 'output')),  type = 'message'))
-	} else { info <- seqminer::readVCFToListByGene(data, gene.file, gene, anno.type, c('ID', 'POS'), c('AF', 'EAF', 'Z', 'SE.Beta', 'weights'), '') }
-	return(info)
+read.vcf.info <- function(data, gene.file, gene, anno.type, uw, quiet) {
+	if (getRversion() >= "3.2.0" & quiet == TRUE) {
+		invisible(capture.output(invisible(capture.output(info <- seqminer::readVCFToListByGene(data, gene.file, gene, anno.type, c('ID', 'POS'), c('AF', 'EAF', 'Z', 'SE.Beta', uw), ''), type = 'output')),  type = 'message'))
+	} else { info <- seqminer::readVCFToListByGene(data, gene.file, gene, anno.type, c('ID', 'POS'), c('AF', 'EAF', 'Z', 'SE.Beta',  uw), '') }
+	info
 }
 
 Indep.Variants <- function(U) {
@@ -196,7 +228,7 @@ sumstat.flipper <- function(U, Z, AF) {
 			AF[j+1] <-  1.-AF[j+1]
 		}
 	}
-	return(list(U = U, Z = Z))#, AF = AF))
+	list(U = U, Z = Z)#, AF = AF))
 }
 
 reference_sample <- function(U, Z, fun) {

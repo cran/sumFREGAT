@@ -1,7 +1,7 @@
 # sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 genewise <- function(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = NULL, ncl = 3, cn = NULL,
-	gen.var.weights = FALSE, fweights = NULL, reference.matrix = FALSE, fun, n = NULL, Fan = FALSE, flip.genotypes = FALSE, rho, test) {
+	gen.var.weights = FALSE, fweights = NULL, reference.matrix = FALSE, fun, n = NULL, Fan = FALSE, flip.genotypes = FALSE, rho, quiet, test) {
 
 	ngenes <- dim(gf)[1]
 	gf <- cbind(gf, matrix(NA, nrow = ngenes, ncol = ncl))
@@ -18,7 +18,7 @@ genewise <- function(score.file, gene.file, gf, anno.type, cor.path, cor.file.ex
 	for (i in 1:ngenes) {
 		gene <- as.character(gf[i, 1])
 		obj <- c(obj0, get.sumstat(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list,
-			reference.matrix, gen.var.weights, fweights, n, Fan, flip.genotypes, fun, test))
+			reference.matrix, gen.var.weights, fweights, n, Fan, flip.genotypes, fun, quiet, test))
 			m1 <- check.sumstat(obj, nc2, test)
 		if (length(m1) == 1) {
 			obj$m <- m1

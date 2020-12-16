@@ -1,7 +1,19 @@
 # sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
-prep.score.files <- function(input.file, reference.file = '', output.file.prefix) {#, annotate = FALSE, path.to.reference, annotation.param) { # 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'P', 'BETA', 'EAF'
-	df <- read.table(input.file, header = TRUE, as.is = TRUE)
+prep.score.files <- function(data, reference = 'ref1KG.MAC5.EUR_AF.RData', output.file.prefix) {
+# 'CHROM', 'POS', 'ID', 'EA', 'P', 'BETA', 'EAF'
+	if (length(data) == 1) {
+		input.file <- data
+		if (requireNamespace("data.table", quietly = TRUE)) {
+			suppressWarnings(df <- data.table::fread(input.file, header = TRUE, data.table = FALSE))
+		} else {
+			df <- read.table(input.file, header = TRUE, as.is = TRUE)
+		}
+	} else if (length(data) > 1) {
+		df <- data
+		input.file <- 'scores'
+	}
+
 	colnames(df) <- toupper(colnames(df))
 	v <- which(colnames(df) %in% c('CHR', 'CHROMOSOME'))
 	if (length(v) == 1) colnames(df)[v] <- 'CHROM'
@@ -12,16 +24,21 @@ prep.score.files <- function(input.file, reference.file = '', output.file.prefix
 	v <- which(colnames(df) %in% c('RSID', 'RS.ID', 'RS_ID', 'SNP.ID', 'SNP_ID'))
 	if (length(v) == 1) colnames(df)[v] <- 'ID'
 	v <- which(colnames(df) == 'EA')
-	if (length(v) == 1) colnames(df)[v] <- 'EFFECT.ALLELE'
+	if (length(v) == 1) {
+		colnames(df)[v] <- 'EFFECT.ALLELE'
+		df[, 'EFFECT.ALLELE'] <- toupper(df[, 'EFFECT.ALLELE'])
+		}
 	
 	# ID and PVAL mandatory
 	# others from user file or 1KG
-	
+
 	ColNames <- c('ID', 'P')
 	v <- !ColNames %in% colnames(df)
 	if (sum(v)) stop(paste("Mandatory column(s) missing:", paste(ColNames[v], collapse = ', ')))
-	
-	
+
+	df <- df[!is.na(df$P) & !is.na(df$ID), ]
+	if (dim(df)[1] == 0) stop("No values assigned for P or ID")
+
 	ColNames <- c('CHROM', 'POS', 'EAF')
 	v <- !ColNames %in% colnames(df)
 	take <- ColNames[v]
@@ -29,8 +46,11 @@ prep.score.files <- function(input.file, reference.file = '', output.file.prefix
 	take[take == 'EAF'] <- 'AF'
 
 	if ('BETA' %in% colnames(df)) {
+		df$BETA[df$BETA == 0] <- 1e-16
 		if ('EFFECT.ALLELE' %in% colnames(df)) {
-			if(!'REF' %in% colnames(df)) take <- c(take, 'REF', 'ALT')
+			colnames(df)[which(colnames(df) == 'REF')] <- 'REF0'
+			colnames(df)[which(colnames(df) == 'ALT')] <- 'ALT0'
+			take <- c(take, 'REF', 'ALT')
 		} else {
 			print("Effect allele column not found, effect sizes cannot be linked")
 		}
@@ -38,11 +58,28 @@ prep.score.files <- function(input.file, reference.file = '', output.file.prefix
 		print("Effect sizes (beta) column not found")
 	}
 	if (length(take) > 0) {
-		if (file.exists(reference.file)) {
-			print('Reading reference file...')
-			ref <- get(load(reference.file))
-			if ('CHROM' %in% take & !'CHROM' %in% colnames(ref)) stop ("No CHROM column in reference data")
-			if ('POS' %in% take & !'POS' %in% colnames(ref)) stop ("No POS column in reference data")
+		is.ref <- 0
+		is.ref.object <- 0
+		if (length(reference) == 1) {
+			if (!is.na(reference)) {
+				if (file.exists(reference)) {
+					is.ref <- 1
+				} else {
+					if (reference != '') print ("Reference file not found! Please download it from https://mga.bionet.nsc.ru/sumFREGAT/ref1KG.MAC5.EUR_AF.RData to use 1000 Genome Reference correlation matrices")
+				}
+			}
+		} else if (length(reference) > 1) is.ref <- is.ref.object <- 1
+		
+		if (is.ref) {
+			if (is.ref.object) {
+				ref <- reference
+			} else {
+				print('Loading reference file...')
+				ref <- get(load(reference))
+			}
+			colnames(ref) <- toupper(colnames(ref))
+			if ('CHROM' %in% take & !'CHROM' %in% colnames(ref)) stop ("No CHROM column in data and reference")
+			if ('POS' %in% take & !'POS' %in% colnames(ref)) stop ("No POS column in data and reference")
 			v <- match(df$ID, ref$ID)
 			
 			if (!sum(v, na.rm = TRUE)) {
@@ -62,31 +99,41 @@ prep.score.files <- function(input.file, reference.file = '', output.file.prefix
 				vv <- take %in% colnames(ref)
 				if (sum(!vv)) {
 					print(paste("Columns that are missing in reference data:", paste(take[!vv], collapse = ', ')))
-					if ('REF' %in% take & !'REF' %in% colnames(ref)) print ("Reference alleles not found, effect sizes cannot be linked")
+					if ('REF' %in% take & !'REF' %in% colnames(ref)) {
+						print ("Reference alleles not found, effect sizes cannot be linked")
+						df$BETA <- df$EFFECT.ALLELE <- NULL
+					}
 					if ('AF' %in% take & !'AF' %in% colnames(ref)) print ("Allele frequencies not found, some weighted tests will be unavailable")
 				}
 				df <- cbind(df, ref[v, take[vv]])
 			}
 		} else {
-			if (reference.file != '') print ("Reference file not found")
+			v <- NA
+		}
+		if (sum(v, na.rm = TRUE) == 0) { # fail to open or link reference data
 			if (any(c('CHROM', 'POS') %in% take)) stop ("Cannot find map data (chromosome, position)")
+			if ('BETA' %in% colnames(df)) {
+				warning ("Reference unavailable, effect sizes not linked")
+				df$BETA <- df$EFFECT.ALLELE <- NULL
+			}
 		}
 	}
 
-	if ('REF' %in% colnames(df)) {
-		v <- df$EFFECT.ALLELE == df$REF
-		df[is.na(v), 'BETA'] <- NA
-		if ('EAF' %in% colnames(df)) df[is.na(v), 'EAF'] <- NA
-		if ('ALT' %in% colnames(df)) {
-			vv <- !v & df$EFFECT.ALLELE != df$ALT
-			if (sum(vv, na.rm = T)) {
-				print(paste("Effect alleles do not match reference/alternative alleles for", sum(vv), "variant(s)"))
-				df[vv, 'BETA'] <- NA
-				if ('EAF' %in% colnames(df)) df[vv, 'EAF'] <- NA
-			}
+	if ('REF' %in% colnames(df) & 'EFFECT.ALLELE' %in% colnames(df)) {
+		v <- c()
+		if (all(c('REF', 'REF0', 'ALT', 'ALT0') %in% colnames(df))) {
+			v <- which((df$REF0 != df$REF & df$REF0 != df$ALT) | (df$ALT0 != df$REF & df$ALT0 != df$ALT))
 		}
+		if ('ALT' %in% colnames(df)) {
+			v <- unique(c(v, which(df$EFFECT.ALLELE != df$REF & df$EFFECT.ALLELE != df$ALT)))
+		}
+		if (sum(v, na.rm = T)) {
+			print(paste("Effect alleles or REF/ALT alleles do not match reference data for", sum(v), "variant(s)"))
+			df[v, 'BETA'] <- NA
+		}
+		df[is.na(df$EFFECT.ALLELE) | is.na(df$REF), 'BETA'] <- NA
+		v <- which(df$EFFECT.ALLELE == df$REF)
 		#here we go
-		v <- which(v)
 		df$BETA[v] <- -df$BETA[v]
 		if ('EAF' %in% colnames(df)) {
 			df$EAF[v] <- 1 - df$EAF[v]
@@ -95,10 +142,20 @@ prep.score.files <- function(input.file, reference.file = '', output.file.prefix
 		print(paste('Effect sizes recoded for', length(v), 'variant(s)'))
 	}
 
+	if (any(df$P == 0)) {
+		print("Some P values equal zero, will be assigned to minimum value in the sample")
+		df$P[df$P == 0] <- min(df$P[df$P > 0])
+	}
 	df$Z <- qnorm(df$P / 2, lower.tail = FALSE)
 	if ('BETA' %in% colnames(df)) {
 		df$Z <- df$Z * sign(df$BETA)
 		df$SE.BETA <- df$BETA / df$Z
+	}
+	
+	if (!missing(output.file.prefix)) {
+		fn <- paste(output.file.prefix, 'vcf', sep = '.')
+	} else {
+		fn <- paste(input.file, 'vcf', sep = '.')
 	}
 
 	df <- df[order(df[, 'POS']), ]
@@ -125,34 +182,36 @@ prep.score.files <- function(input.file, reference.file = '', output.file.prefix
 		print(paste0('Allele frequencies found and linked'))
 	}
 
-	a <- grep('ANNO', colnames(df))
-	if (length(a) == 1) {
-		vcf$INFO <- paste0(vcf$INFO, ';ANNO=', df[, a])
-		title <- c(title, '##INFO=<ID=ANNO,Number=1,Type=String,Description="Variants annotations">')
-		print(paste0('Annotations ("', colnames(df)[a], '") found and linked'))
-	}
-
 	a <- grep('\\bW', colnames(df))
 	if (length(a) == 1) {
 		vcf$INFO <- paste0(vcf$INFO, ';W=', df[, a])
 		title <- c(title, '##INFO=<ID=W,Number=1,Type=Float,Description="Weights">')
-		print(paste0('User weights ("', colnames(df)[a], '") found and linked'))
+		print(paste0("User weights ('", colnames(df)[a], "') found and linked"))
 	}
 
-	a <- grep('\\bN', colnames(df))
-	if (length(a) == 1) {
-		vcf$INFO <- paste0(vcf$INFO, ';N=', df[, a])
-		title <- c(title, '##INFO=<ID=N,Number=1,Type=Integer,Description="Sample size">')
-		print(paste0('Sample size info ("', colnames(df)[a], '") found and linked'))
+	a <- grep('\\bANNO', colnames(df), value = TRUE)
+	
+	if ('ANNO' %in% a) {
+		vcf$INFO <- paste0(vcf$INFO, ';ANNO=', df[, a])
+		title <- c(title, '##INFO=<ID=ANNO,Number=1,Type=String,Description="Variants annotations">')
+		print(paste0("Annotations ('", colnames(df)[a], "') found and linked"))
+	}
+	a <- a[a != 'ANNO']
+	
+
+	for (an in a) {
+		an.v <- 1 - 10^(-df[, as.character(an)]/10)
+		vcf$INFO <- paste0(vcf$INFO, ';', an, '=', an.v)
+		title <- c(title, paste0("##INFO=<ID=", an, ",Number=1,Type=Float,Description='", an, "'>"))
+		print(paste0("Column '", an, "' linked"))
 	}
 
-	if (!missing(output.file.prefix)) {
-		fn <- paste(output.file.prefix, 'vcf', sep = '.')
-	} else {
-		fn <- paste(input.file, 'vcf', sep = '.')
-	}
 	write.table(title, fn, col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
-	suppressWarnings(write.table(vcf, fn, row.names = FALSE, quote = FALSE, append = TRUE, sep = '\t'))
+	if (requireNamespace("data.table", quietly = TRUE)) {
+		suppressWarnings(data.table::fwrite(vcf, fn, row.names = FALSE, quote = FALSE, append = TRUE, col.names = TRUE, sep = '\t', na = 'NA'))
+	} else {
+		suppressWarnings(write.table(vcf, fn, row.names = FALSE, quote = FALSE, append = TRUE, sep = '\t'))
+	}
 
 	fn.gz <- paste(fn, 'gz', sep = '.')
 	if (file.exists(fn.gz)) system(paste('rm', fn.gz))

@@ -27,7 +27,7 @@ sumstat.SKAT <- function(obj) {
 
 'SKAT' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', anno.type = '', beta.par = c(1, 25), weights.function = NULL,
 user.weights = FALSE, gen.var.weights = 'se.beta', method = 'kuonen', acc = 1e-8, lim = 1e+6, rho = FALSE,
-p.threshold = 0.8, write.file = FALSE) {
+p.threshold = 0.8, write.file = FALSE, quiet = FALSE) {
 
 ############ COMMON CHECKS
 
@@ -49,7 +49,7 @@ check.list <- get.check.list('SKAT', score.file, anno.type, user.weights, gen.va
 obj0 <- sapply(c('method', 'acc', 'lim', 'rhos', 'p.threshold'),
 	function(x) get(x), simplify = FALSE, USE.NAMES = TRUE)
 
-genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0, ncl = 3, NULL, gen.var.weights, fweights, rho = rho, test = 'SKAT')
+genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0, ncl = 3, NULL, gen.var.weights, fweights, rho = rho, quiet = quiet, test = 'SKAT')
 
 }
 

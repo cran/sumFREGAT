@@ -115,10 +115,10 @@ sumstat.SKATO <- function(obj) {
 
 
 'SKATO' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', anno.type = '', beta.par = c(1, 25), weights.function = NULL,
-user.weights = FALSE, method = 'kuonen', acc = 1e-8, lim = 1e+6, rho = TRUE, p.threshold = 0.8, write.file = FALSE) {
+user.weights = FALSE, method = 'kuonen', acc = 1e-8, lim = 1e+6, rho = TRUE, p.threshold = 0.8, write.file = FALSE, quiet = FALSE) {
 
 	SKAT(score.file, gene.file, genes, cor.path, anno.type, beta.par, weights.function,
 	user.weights, gen.var.weights = 'se.beta', method, acc, lim, rho,
-	p.threshold, write.file)
+	p.threshold, write.file, quiet)
 
 }

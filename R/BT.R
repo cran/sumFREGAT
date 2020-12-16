@@ -18,7 +18,7 @@ sumstat.BT <- function(obj) {
 
 'BT' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
 anno.type = '', beta.par = c(1, 25), weights.function = NULL,
-user.weights = FALSE, write.file = FALSE) {
+user.weights = FALSE, write.file = FALSE, quiet = FALSE) {
 
 ############ COMMON CHECKS
 
@@ -34,7 +34,7 @@ check.list <- get.check.list('BT', score.file, anno.type, user.weights, gen.var.
 
 ############ ANALYSIS
 
-genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, NULL, ncl = 5, c('beta', 'se.beta'), gen.var.weights, fweights, test = 'BT')
+genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, NULL, ncl = 5, c('beta', 'se.beta'), gen.var.weights, fweights, quiet = quiet, test = 'BT')
 
 }
 

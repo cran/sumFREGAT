@@ -7,8 +7,9 @@
 	tests for the region-based association analysis using summary statistics data
 	(beta and P values) and correlations between genetic variants. It does not
 	require genotype or phenotype data. Methods implemented are SKAT and SKAT-O
-	(sequence kernel association tests), BT (burden test), FLM (functional linear model),
-	PCA (principal components analysis), MLR (multiple linear regression), and others.
+	(sequence kernel association tests), BT (burden test), ACAT (aggregated Cauchy
+	association test), FLM (functional linear model), PCA (principal components analysis),
+	MLR (multiple linear regression), and others.
 }
 \details{
 Package: sumFREGAT\cr

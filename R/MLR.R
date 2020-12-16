@@ -13,7 +13,7 @@ sumstat.MLR <- function(obj) {
 
 
 'MLR' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
-anno.type = '', n, reference.matrix = TRUE, fun = 'LH', write.file = FALSE) {
+anno.type = '', n, reference.matrix = TRUE, fun = 'LH', write.file = FALSE, quiet = FALSE) {
 
 ############ COMMON CHECKS
 
@@ -27,6 +27,6 @@ check.list <- get.check.list('MLR', score.file, anno.type, n = n)
 
 ############ ANALYSIS
 
-genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, reference.matrix = reference.matrix, fun = fun, n = n, test = 'MLR')
+genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, reference.matrix = reference.matrix, fun = fun, n = n, quiet = quiet, test = 'MLR')
 
 }

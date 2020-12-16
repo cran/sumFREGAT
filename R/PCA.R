@@ -59,7 +59,7 @@ PC <- function(X) {
 
 'PCA' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
 anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
-reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE) {
+reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE) {
 
 ############ COMMON CHECKS
 
@@ -77,6 +77,6 @@ check.list <- get.check.list('PCA', score.file, anno.type, user.weights, gen.var
 ############ ANALYSIS
 
 genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = list(var.fraction = var.fraction),
-	ncl = 5, c('ncomponents', 'explained.variance.fraction'), gen.var.weights, fweights, reference.matrix, fun, n, test = 'PCA')
+	ncl = 5, c('ncomponents', 'explained.variance.fraction'), gen.var.weights, fweights, reference.matrix, fun, n, quiet = quiet, test = 'PCA')
 
 }

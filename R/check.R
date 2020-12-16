@@ -15,20 +15,25 @@ check.sumstat <- function(obj, lgt, test = '') {
 			}
 		return(c(m0, m1, pnorm(abs(obj$df$Z), lower.tail = FALSE) * 2, rep(NA, lgt - 1)))
 	}
-	return(m1)
+	m1
 
 }
 
 check.input <- function(score.file, cor.path, gene.file, genes) {
 	if (missing(score.file)) stop("'score.file' is missing, with no default")
 	if (!file.exists(score.file)) {
-		score.file1 <- paste(score.file, 'anno.vcf.gz', sep = '.')
+		score.file1 <- paste0(score.file, '.vcf.gz')
 		if (file.exists(score.file1)) {
 			score.file <- score.file1
 		} else { stop(paste(score.file, '- No such file or directory')) }
 	}
 
-	if (missing(gene.file)) gene.file <- system.file("testfiles/NCBI37.3.geneFile.txt.gz", package = "sumFREGAT")
+	if (missing(gene.file)) {
+		gene.file <- system.file("testfiles/NCBI37.3.geneFile.txt.gz", package = "sumFREGAT")
+	} else {
+		if (gene.file %in% c('hg19', 'hg37')) gene.file <- system.file("testfiles/NCBI37.3.geneFile.txt.gz", package = "sumFREGAT")
+		if (gene.file == 'hg38') gene.file <- system.file("testfiles/ensembl.hg38.txt", package = "sumFREGAT")
+	}
 	#if (gene.file == 'old') gene.file <- system.file("testfiles/refFlat_hg19_6col.txt.gz", package = "sumFREGAT")
 
 	gf <- read.table(gene.file)
@@ -47,12 +52,17 @@ check.input <- function(score.file, cor.path, gene.file, genes) {
 	if (dim(gf)[1] == 0) stop("No genes found in gene.file")
 	gf <- gf[, c(1, 3, 5:6)]
 
-	if (missing(cor.path)) {
-		cor.path <- ''
-	} else {
-		if (substr(cor.path, nchar(cor.path), nchar(cor.path)) != '/') cor.path <- paste(cor.path, '/', sep = '')
+	if (cor.path == 'do not check cor.path') {
+		return(sapply(c('score.file', 'gene.file', 'gf'),
+		function(x) get(x), simplify = FALSE, USE.NAMES = TRUE))
 	}
 
+	if (missing(cor.path)) {
+		cor.path <- ''
+	} else if (cor.path != '') {
+		if (substr(cor.path, nchar(cor.path), nchar(cor.path)) != '/') cor.path <- paste(cor.path, '/', sep = '')
+	}
+#browser()
 	gf <- gf[!duplicated(gf[, 1]), ]
 	i <- 1
 	max.iter <- min(dim(gf)[1], 50)
@@ -81,24 +91,15 @@ get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, ge
 
 	h <- read.table(score.file, nrows = 10, comment.char = '', sep = '\n', as.is = T)
 
-	check.list <- 'Z'
-
-	if (anno.type != '')  {
+	if (anno.type[1] != '') {
 		if (!grepl('ANNO', h)) stop ('Annotations not found in input file')
 	}
 
-	if (user.weights) {
-		if (!grepl('Weights', h)) stop ('User weights not found in input file')
-		check.list <- c(check.list, 'W')
-	}
-
-#	if (grepl('Sample size', h)) {
-#		check.list <- c(check.list, 'N')
-#	}
+check.list <- c()
 
 	if (test %in% c('MLR', 'FLM', 'PCA')) {
 		if (missing(n) & !'N' %in% check.list) stop ("Sample size(s) must be set for this type of analysis")
-		if (!missing(n) & 'N' %in% check.list) warning ("Sample sizes column found in input file, 'n' argument ignored")
+		#if (!missing(n) & 'N' %in% check.list) warning ("Sample sizes column found in input file, 'n' argument ignored")
 		if (test == 'FLM') check.list <- c(check.list, 'POS')
 	}
 
@@ -108,21 +109,33 @@ get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, ge
 	}
 
 	if (!is.null(fweights) | gen.var.weights == 'af') {
-		if (!grepl('Frequency', h, ignore.case = TRUE)) stop ('Allele frequencies not found in input file, try to set beta.par = c(1, 1)')
+		if (!grepl('Frequency', h, ignore.case = TRUE)) stop ('Allele frequencies not found in input file, consider changing "beta.par" and "gen.var.weights" parameters"')
 		check.list <- c(check.list, 'AF')
 	}
 
-	return(check.list)
+	check.list <- c(check.list, 'Z')
+
+	if (length(user.weights) > 1 | (length(user.weights) == 1 & !(is.character(user.weights) | is.logical(user.weights)))) stop("Wrong 'user.weights' input, please provide single logical or character name corresponding to the input data used")
+	if (is.logical(user.weights)) {
+		if (user.weights) {
+			if (!grepl('Weights', h)) stop ('User weights not found in input file')
+			check.list <- c(check.list, 'W')
+		}
+	} else { check.list <- c(check.list, user.weights) }
+
+	check.list
 }
 
 check.method <- function(method) {
 	method <- tolower(method)
 	method <- match.arg(method, c('davies', 'kuonen', 'hybrid'))
-	return(method)
+	method
 }
 
 check.weights <- function(weights, beta.par, gen.var.weights) {
+
 	if (!missing(gen.var.weights)) {
+		if (gen.var.weights == FALSE) gen.var.weights <- 'none'
 		gen.var.weights <- tolower(gen.var.weights)
 		gen.var.weights <- match.arg(gen.var.weights, c('se.beta', 'af', 'none'))
 	} else {
@@ -168,13 +181,15 @@ check.basis <- function(value, name, base = 'none', order) {
 		value <- round(value)
 		warning(paste(name, "should be an integer number, set to", value))
 	}
-	return(value)
+	value
 }
 
 check.rho <- function(rho) {
-	if (length(rho) == 1 & is.logical(rho) & rho) {
-		#rho <- (0:10)/10
-		rho <- c(0, 0.1^2, 0.2^2, 0.3^2, 0.4^2,0.5^2, 0.5, 1)
+	if (length(rho) == 1) {
+		if (is.logical(rho) & rho) {
+			#rho <- (0:10)/10
+			rho <- c(0, 0.1^2, 0.2^2, 0.3^2, 0.4^2,0.5^2, 0.5, 1)
+		}
 	} else {
 		for (i in 1:length(rho)) {
 			if (rho[i] < 0 || rho[i] > 1) {
@@ -182,7 +197,7 @@ check.rho <- function(rho) {
 			}
 		}
 	}
-	return(rho)
+	rho
 }
 
 check.spec.SKAT <- function(method, rho) {

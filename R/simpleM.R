@@ -28,7 +28,7 @@ sumstat.simpleM <- function(obj) {
 
 
 'simpleM' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
-anno.type = '', var.fraction = .995, write.file = FALSE) {
+anno.type = '', var.fraction = .995, write.file = FALSE, quiet = FALSE) {
 
 ############ COMMON CHECKS
 
@@ -41,6 +41,6 @@ check.list <- get.check.list('simpleM', score.file, anno.type)
 
 ############ ANALYSIS
 
-genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = list(var.fraction = var.fraction), test = 'simpleM')
+genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = list(var.fraction = var.fraction), quiet = quiet, test = 'simpleM')
 
 }

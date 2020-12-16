@@ -1,0 +1,6 @@
+sumFREGAT_1.2.0
+- ACAT method added
+- sumSTAAR procedure added
+- 'quiet' option added with default 'quiet = FALSE'
+- data.table now can be used to speen up the I/O
+- prep.score.file() input now can be R objects
