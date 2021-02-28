@@ -1,6 +1,7 @@
 # sumFREGAT (2017-2020) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
-get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list, reference.matrix, gen.var.weights = FALSE, fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, test) {
+get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list, reference.matrix, gen.var.weights = FALSE,
+fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test) {
 
 	uw <- check.list[length(check.list)]
 	if (uw == 'Z') uw <- 0
@@ -11,7 +12,7 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 		df0 <- read.vcf.info(score.file, gene.file, gene, anno, uw, quiet)
 		if (is.null(df0$Z)) next
 		df0$sampleId <- NULL
-		df <- rbind(df, as.data.frame(df0, stringsAsFactors = FALSE)) # POS, ID, AF, EAF, SE.Beta, Z, weights
+		df <- rbind(df, as.data.frame(df0, stringsAsFactors = FALSE)) # POS, ID, AF, EAF, SE.Beta, Z, weights or prob
 	}
 	if (is.null(df)) {
 		warning("No variants to analyze in gene ", gene, ", skipped")
@@ -101,7 +102,12 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 		df$w <- rep(1, dim(df)[1])
 	} else {
 		colnames(df)[colnames(df) == uw] <- 'w'
-		if (uw != 'W') {
+		if (uw != 'W') { # PROB case
+			if (phred) {
+				df$w <- 1 - 10^(-df$w/10)
+			} else {
+				if (any(df$w < 0 | df$w > 1)) warning ("Probabilities are not in range 0..1 for gene ", gene)
+			}
 			if (test %in% c('SKAT', 'ACAT')) {
 				df$w <- sqrt(df$w)
 			}
@@ -147,7 +153,7 @@ get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.fi
 		df$w <- df$w * sqrt(2. * df$AF * (1. - df$AF))  #Beta-weighted genotype under HWE
 	}
 	if (!is.na(uw)) {
-		if (uw != 'W' & test == 'ACAT') {
+		if (uw != 'W' & test == 'ACAT') { # PROB case
 			df$w <- df$w ^ 2
 		}
 	}

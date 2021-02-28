@@ -89,7 +89,16 @@ detect.cor.file.ext <- function(cor.path, gene) {
 
 get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, gen.var.weights = FALSE, fweights = NULL, rho = FALSE, n = NULL) {
 
-	h <- read.table(score.file, nrows = 10, comment.char = '', sep = '\n', as.is = T)
+	con <- file(score.file, "r")
+	h <- c()
+	while (TRUE) {
+		line <- readLines(con, 1)
+		if (grepl("##", line, fixed = TRUE)) {
+			h <- paste(h, line)
+		} else { break }
+	}
+	close(con)
+	# h <- read.table(score.file, nrows = 10, comment.char = '', sep = '\n', as.is = T)
 
 	if (anno.type[1] != '') {
 		if (!grepl('ANNO', h)) stop ('Annotations not found in input file')

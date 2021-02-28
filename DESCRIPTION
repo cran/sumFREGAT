@@ -1,6 +1,6 @@
 Package: sumFREGAT
 Title: Fast Region-Based Association Tests on Summary Statistics
-Version: 1.2.0
+Version: 1.2.1
 Author: Nadezhda M. Belonogova <belon@bionet.nsc.ru> and 
     Gulnara R. Svishcheva <gulsvi@bionet.nsc.ru>
     with contributions from:
@@ -22,5 +22,5 @@ Description: An adaptation of classical region/gene-based association analysis
 License: GPL-3
 LazyLoad: yes
 NeedsCompilation: yes
-Packaged: 2020-12-16 16:32:19 UTC; lima
-Date/Publication: 2020-12-16 18:30:02 UTC
+Packaged: 2021-02-28 10:16:27 UTC; lima
+Date/Publication: 2021-02-28 11:30:02 UTC

@@ -61,6 +61,14 @@ PC <- function(X) {
 anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
 reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE) {
 
+	do.call(PCA.int, c(as.list(environment()), prob = NA, phred = NA))
+
+}
+
+PCA.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
+anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
+reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE, prob, phred) {
+
 ############ COMMON CHECKS
 
 tmp <- check.input(score.file, cor.path, gene.file, genes)
@@ -72,11 +80,12 @@ tmp <- check.weights(weights.function, beta.par)
 for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 
 if (!missing(n)) n <- n - 1
+if (!is.na(prob)) user.weights <- prob
 check.list <- get.check.list('PCA', score.file, anno.type, user.weights, gen.var.weights, fweights, n = n)
 
 ############ ANALYSIS
 
 genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = list(var.fraction = var.fraction),
-	ncl = 5, c('ncomponents', 'explained.variance.fraction'), gen.var.weights, fweights, reference.matrix, fun, n, quiet = quiet, test = 'PCA')
+	ncl = 5, c('ncomponents', 'explained.variance.fraction'), gen.var.weights, fweights, reference.matrix, fun, n, quiet = quiet, phred = phred, test = 'PCA')
 
 }

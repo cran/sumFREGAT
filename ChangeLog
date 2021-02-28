@@ -4,3 +4,6 @@ sumFREGAT_1.2.0
 - 'quiet' option added with default 'quiet = FALSE'
 - data.table now can be used to speen up the I/O
 - prep.score.file() input now can be R objects
+
+sumFREGAT_1.2.1
+- FFGAS function added as an extension to sumSTAAR procedure

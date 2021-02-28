@@ -29,10 +29,17 @@ sumstat.ACAT <- function(obj){
     }))
 }
 
-
 'ACAT' <- function (score.file, gene.file, genes = 'all', anno.type = '',
 beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE, gen.var.weights = 'none',
 write.file = FALSE, quiet = FALSE) {
+
+do.call(ACAT.int, c(as.list(environment()), prob = NA, phred = NA))
+
+}
+
+'ACAT.int' <- function (score.file, gene.file, genes = 'all', anno.type = '',
+beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE, gen.var.weights = 'none',
+write.file = FALSE, quiet = FALSE, prob, phred) {
 
 ############ COMMON CHECKS
 
@@ -44,10 +51,11 @@ for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 tmp <- check.weights(weights.function, beta.par, gen.var.weights)
 for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 
+if (!is.na(prob)) user.weights <- prob
 check.list <- get.check.list('ACAT', score.file, anno.type, user.weights, gen.var.weights, fweights)
 
 ############ ANALYSIS
 
-genewise(score.file, gene.file, gf, anno.type, check.list = check.list, write.file = write.file, gen.var.weights = gen.var.weights, fweights = fweights, quiet = quiet, test = 'ACAT')
+genewise(score.file, gene.file, gf, anno.type, check.list = check.list, write.file = write.file, gen.var.weights = gen.var.weights, fweights = fweights, quiet = quiet, phred = phred, test = 'ACAT')
 
 }

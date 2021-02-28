@@ -29,7 +29,8 @@ output.file.prefix)
 	alleles do not match\cr\cr
 	Annotation columns:\cr\cr
 	"ANNO": functional annotations (like "intron_variant", "synonymous", "missense" etc.)\cr
-	"ANNO1", "ANNO2", "ANNO3" etc.: annotations (Phred) to be passed to \code{sumSTAAR} (see \code{sumSTAAR() function})\cr\cr
+	"PROB", "PROB1", "PROB2", "PROB3" etc.: probabilities of a variant to be causal, can be passed to
+	\code{sumSTAAR()} (PHRED scale) or \code{FFGAS()}\cr\cr
 	For example:\cr\cr
 	CHROM POS ID EA P BETA EAF\cr
 	1 196632134 1:196632134 T 0.80675 0.22946 0.00588\cr
@@ -66,17 +67,17 @@ output.file.prefix)
 \dontrun{
 
 data <- system.file("testfiles/CFH.dat", package = "sumFREGAT")
-prep.score.files(data, output.file.prefix = "CFH.scores")
+prep.score.files(data, output.file.prefix = "CFH")
 
 # requires reference file "ref1KG.MAC5.EUR_AF.RData" (can be downloaded
 # at http://mga.bionet.nsc.ru/sumFREGAT/)
 
 data <- system.file("testfiles/CFH.full.input.dat", package = "sumFREGAT")
 prep.score.files(data, reference = "ref1KG.MAC5.EUR_AF.RData",
-	output.file.prefix = "CFH.scores.full")
+	output.file.prefix = "CFH.full")
 
-data <- system.file("testfiles/CFH.anno.phred.dat", package = "sumFREGAT")
+data <- system.file("testfiles/CFH.prob.dat", package = "sumFREGAT")
 prep.score.files(data, reference = "ref1KG.MAC5.EUR_AF.RData",
-	output.file.prefix = "CFH.anno")
+	output.file.prefix = "CFH.prob")
 }
 }

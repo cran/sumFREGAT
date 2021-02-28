@@ -190,18 +190,15 @@ prep.score.files <- function(data, reference = 'ref1KG.MAC5.EUR_AF.RData', outpu
 	}
 
 	a <- grep('\\bANNO', colnames(df), value = TRUE)
-	
-	if ('ANNO' %in% a) {
+	if (length(a) == 1) {
 		vcf$INFO <- paste0(vcf$INFO, ';ANNO=', df[, a])
 		title <- c(title, '##INFO=<ID=ANNO,Number=1,Type=String,Description="Variants annotations">')
 		print(paste0("Annotations ('", colnames(df)[a], "') found and linked"))
 	}
-	a <- a[a != 'ANNO']
-	
 
+	a <- grep('\\bPROB', colnames(df), value = TRUE)
 	for (an in a) {
-		an.v <- 1 - 10^(-df[, as.character(an)]/10)
-		vcf$INFO <- paste0(vcf$INFO, ';', an, '=', an.v)
+		vcf$INFO <- paste0(vcf$INFO, ';', an, '=', df[, as.character(an)])
 		title <- c(title, paste0("##INFO=<ID=", an, ",Number=1,Type=Float,Description='", an, "'>"))
 		print(paste0("Column '", an, "' linked"))
 	}

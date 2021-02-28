@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 integrateNEW = function(T0,katint,q1,Pmin,m1) {
  p.value = try({ T0 + integrate(katint,0,q1,subdivisions=1000,abs.tol=1e-25)$val }, silent=TRUE)
@@ -117,8 +117,10 @@ sumstat.SKATO <- function(obj) {
 'SKATO' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', anno.type = '', beta.par = c(1, 25), weights.function = NULL,
 user.weights = FALSE, method = 'kuonen', acc = 1e-8, lim = 1e+6, rho = TRUE, p.threshold = 0.8, write.file = FALSE, quiet = FALSE) {
 
-	SKAT(score.file, gene.file, genes, cor.path, anno.type, beta.par, weights.function,
-	user.weights, gen.var.weights = 'se.beta', method, acc, lim, rho,
-	p.threshold, write.file, quiet)
+	if (length(rho) == 1) {
+		if (!rho) stop("rho should be either 'TRUE' or a vector of grid values")
+	}
+
+	do.call(SKAT.int, c(as.list(environment()), gen.var.weights = 'se.beta', prob = NA, phred = NA))
 
 }

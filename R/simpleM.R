@@ -26,7 +26,6 @@ sumstat.simpleM <- function(obj) {
 	}))
 }
 
-
 'simpleM' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
 anno.type = '', var.fraction = .995, write.file = FALSE, quiet = FALSE) {
 

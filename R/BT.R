@@ -20,6 +20,14 @@ sumstat.BT <- function(obj) {
 anno.type = '', beta.par = c(1, 25), weights.function = NULL,
 user.weights = FALSE, write.file = FALSE, quiet = FALSE) {
 
+	do.call(BT.int, c(as.list(environment()), prob = NA, phred = NA))
+
+}
+
+BT.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
+anno.type = '', beta.par = c(1, 25), weights.function = NULL,
+user.weights = FALSE, write.file = FALSE, quiet = FALSE, prob, phred) {
+
 ############ COMMON CHECKS
 
 tmp <- check.input(score.file, cor.path, gene.file, genes)
@@ -27,6 +35,7 @@ for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 
 ############ SPECIFIC CHECKS
 
+if (!is.na(prob)) user.weights <- prob
 tmp <- check.weights(weights.function, beta.par)
 for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 
@@ -34,7 +43,7 @@ check.list <- get.check.list('BT', score.file, anno.type, user.weights, gen.var.
 
 ############ ANALYSIS
 
-genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, NULL, ncl = 5, c('beta', 'se.beta'), gen.var.weights, fweights, quiet = quiet, test = 'BT')
+genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, NULL, ncl = 5, c('beta', 'se.beta'), gen.var.weights, fweights, quiet = quiet, phred = phred, test = 'BT')
 
 }
 

@@ -30,6 +30,15 @@ anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = F
 basis.function = 'fourier', k = 25, order = 4, flip.genotypes = FALSE,
 Fan = TRUE, reference.matrix = TRUE, fun = 'LH', write.file = FALSE, quiet = FALSE) {
 
+	do.call(FLM.int, c(as.list(environment()), prob = NA, phred = NA))
+
+}
+
+FLM.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
+anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
+basis.function = 'fourier', k = 25, order = 4, flip.genotypes = FALSE,
+Fan = TRUE, reference.matrix = TRUE, fun = 'LH', write.file = FALSE, quiet = FALSE, prob, phred) {
+
 ############ COMMON CHECKS
 
 tmp <- check.input(score.file, cor.path, gene.file, genes)
@@ -44,6 +53,7 @@ tmp <- check.spec.FLM(basis.function, k, order)
 for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 
 if (!missing(n)) n <- n - 1
+if (!is.na(prob)) user.weights <- prob
 check.list <- get.check.list('FLM', score.file, anno.type, user.weights, gen.var.weights, fweights, n = n)
 
 ############ ANALYSIS
@@ -52,6 +62,6 @@ obj0 <- sapply(c('k', 'basis', 'model'),
 	function(x) get(x), simplify = FALSE, USE.NAMES = TRUE)
 
 genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0, ncl = 4, 'model',
-	gen.var.weights, fweights, reference.matrix, fun, n, Fan, flip.genotypes, quiet = quiet, test = 'FLM')
+	gen.var.weights, fweights, reference.matrix, fun, n, Fan, flip.genotypes, quiet = quiet, phred = phred, test = 'FLM')
 
 }

@@ -12,6 +12,7 @@ importFrom("utils", "capture.output", "read.table", "write.table")
 
 export(ACAT)
 export(ACATO)
+export(FFGAS)
 export(sumSTAAR)
 export(simpleM)
 export(minp)
