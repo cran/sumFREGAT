@@ -1,12 +1,12 @@
 # sumFREGAT (2017-2020) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list, reference.matrix, gen.var.weights = FALSE,
-fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test) {
+fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, k, quiet, phred, approximation, test) {
 
 	uw <- check.list[length(check.list)]
 	if (uw == 'Z') uw <- 0
+
 	### read gene info
-	#browser()
 	df <- c()
 	for (anno in anno.type) {
 		df0 <- read.vcf.info(score.file, gene.file, gene, anno, uw, quiet)
@@ -16,64 +16,67 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 	}
 	if (is.null(df)) {
 		warning("No variants to analyze in gene ", gene, ", skipped")
-		return(list(m0 = 0, df = NULL))
+		return(list(m0 = 0, m1 = 0))
 	}
 
 	m0 <- dim(df)[1]
 	df[df == 'NA'] <- NA
+	if (m0 == 1) return(list(m0 = m0, m1 = 1, df = df))
+
 	### load/read the correlation matrix from file
 
 	doU <- ifelse (test != 'ACAT', 1, 0)
 	
 	if (doU) {
-	cor.file <- paste0(cor.path, gene, cor.file.ext)
-	if (!file.exists(cor.file)) {
-		warning("No correlation file for gene ", gene, ", skipped")
-		return(list(m0 = m0, df = NULL))
-	}
-	if (cor.file.ext %in% c('.RDa', '.RData')) {
-		U <- get(load(cor.file))
-	} else {
-		if (requireNamespace("data.table", quietly = TRUE)) {
-			U <- data.table::fread(cor.file, data.table = FALSE)
-		} else {
-			U <- read.table(cor.file)
+
+		cor.file <- paste0(cor.path, gene, cor.file.ext)
+		if (!file.exists(cor.file)) {
+			warning("No correlation file for gene ", gene, ", skipped")
+			return(list(m0 = m0, m1 = 0))
 		}
-	}
-	if (length(U) == 1) {
-		warning("No matching variants in correlation file for gene ", gene, ", skipped")
-		return(list(m0 = m0, df = NULL))
-	}
+		if (cor.file.ext %in% c('.RDa', '.RData')) {
+			U <- get(load(cor.file))
+		} else {
+			if (requireNamespace("data.table", quietly = TRUE)) {
+				U <- as.matrix(suppressWarnings(data.table::fread(cor.file)), rownames = 1)
+			} else {
+				U <- read.table(cor.file)
+			}
+		}
+		if (length(U) == 1) {
+			warning("No matching variants in correlation file for gene ", gene, ", skipped")
+			return(list(m0 = m0, m1 = 0))
+		}
 
-	### remove NAs from U
+		### subset
 
-	U.na <- is.na(U)
-	v <- which(colSums(!U.na) <= 1)
-	if (length(v) > 0) U <- as.matrix(U[-v, -v])
-	if (length(U) > 0) {
+		v <- match(df$ID, rownames(U))
+		if (sum(!is.na(v)) == 0) {
+			warning("No matching variants in correlation file for gene ", gene, ", skipped")
+			return(list(m0 = m0, m1 = 0))
+		}
+		df <- df[!is.na(v), ]
+		if (sum(!is.na(v)) == 1) return(list(m0 = m0, m1 = 1, df = df))
+		v <- v[!is.na(v)]
+		U <- as.matrix(U[v, v])
+
+		### remove NAs from U
+
 		U.na <- is.na(U)
-		v <- which(colSums(U.na) > 0)
+		v <- which(colSums(!U.na) <= 1)
 		if (length(v) > 0) U <- as.matrix(U[-v, -v])
-	}
-	if (length(U) == 0) {
-		warning("No correlation values for gene ", gene, ", skipped")
-		return(list(m0 = m0, df = NULL))
-	}
-
-	### subset
-
-	v <- match(df$ID, rownames(U))
-	if (sum(!is.na(v)) == 0) {
-		warning("No matching variants in correlation file for gene ", gene, ", skipped")
-		return(list(m0 = m0, df = NULL))
-	}
-	df <- df[!is.na(v), ]
-	v <- v[!is.na(v)]
-	U <- as.matrix(U[v, v])
-	
+		if (length(U) > 0) {
+			U.na <- is.na(U)
+			v <- which(colSums(U.na) > 0)
+			if (length(v) > 0) U <- as.matrix(U[-v, -v])
+		}
+		if (length(U) == 0) {
+			warning("No correlation values for gene ", gene, ", skipped")
+			return(list(m0 = m0, m1 = 0))
+		} else if (length(U) == 1) return(list(m0 = m0, m1 = 1, df = df))
+gc()
 	} # end U
 
-#browser()
 	# compatibility, remove this later, as well as reading EAF from file
 	if ('AF' %in% check.list) {
 		if (!is.na(df[1, 'AF'])) {
@@ -91,12 +94,14 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 		v <- !is.na(df[, i])
 		if (sum(v) == 0) {
 			warning("No ", i, " assigned for gene ", gene, ", skipped")
-			return(list(m0 = m0, df = NULL))
+			return(list(m0 = m0, m1 = 0))
 		}
 		df <- df[v, ]
 		if (doU) U <- as.matrix(U[v, v])
 	}
-	if (sum(v) == 1) return(list(m0 = m0, df = df))
+	if (sum(v) == 1) return(list(m0 = m0, m1 = 1, df = df))
+
+	if (test == 'SKATO') df$Pi <- rep(1, dim(df)[1])
 
 	if (uw == 0) {
 		df$w <- rep(1, dim(df)[1])
@@ -108,6 +113,7 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 			} else {
 				if (any(df$w < 0 | df$w > 1)) warning ("Probabilities are not in range 0..1 for gene ", gene)
 			}
+			if (test == 'SKATO') df$Pi <- df$w
 			if (test %in% c('SKAT', 'ACAT')) {
 				df$w <- sqrt(df$w)
 			}
@@ -123,14 +129,15 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 		v <- sapply(1:length(df$AF), function(x) df$AF[x] >= 0 & df$AF[x] <= 1)
 		if (sum(v) == 0) {
 			warning("Allele frequencies are not in range 0..1 in gene ", gene, ", skipped")
-			return(list(m0 = m0, df = NULL))
+			return(list(m0 = m0, m1 = 0))
 		}
+		if (sum(v) == 1) return(list(m0 = m0, m1 = 1, df = df))
 		df <- df[v, ]
 		if (doU) U <- as.matrix(U[v, v])
 
 		### flip to minor for BT, SKAT
 
-		if (any(df$AF > .5) & test %in% c('BT', 'SKAT')) {#, 'MLR')) {
+		if (any(df$AF > .5) & test %in% c('BT', 'SKAT', 'SKATO')) {#, 'MLR')) {
 			v <- which(df$AF > .5)
 			df$Z[v] <- -df$Z[v]
 			df$AF[v] <- 1 - df$AF[v]
@@ -163,8 +170,33 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 	if (test == 'MLR' | (test == 'FLM' & Fan)) {
 		v <- Indep.Variants(U)
 		df <- df[v, ]
-		if (length(v) == 1) return(list(m0 = m0, df = df))
+		if (length(v) == 1) return(list(m0 = m0, m1 = 1, df = df))
 		U <- as.matrix(U[v, v])
+	}
+
+######## approximation
+
+	m1 <- dim(df)[1]
+
+	if (approximation) {
+
+		p.sum <- NA
+
+		if (m1 >= 500){ #-------- for LARGE gene -------
+
+			mean.w <- mean(df$w)
+			pvalS  <- pnorm(abs((df$w/mean.w) * df$Z), lower.tail = FALSE) * 2	## convert Z to Pval
+			is.small <- (pvalS < 0.8)  ### main threshold for pvalues
+			n.small <- sum(is.small)
+			if (n.small < m1){         ### There are 'small' and 'large' w.p.values
+				p.sum <- mean(pvalS[!is.small])
+				if (n.small == 0) {
+					return(list(m0 = m0, m1 = m1, p.sum = p.sum))
+				}
+				df   <- df[is.small, ]
+				U   <- U[is.small, is.small]
+			}
+		}
 	}
 
 	### FLM case
@@ -173,7 +205,7 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 		v <- !is.na(df$POS)
 		if (sum(v) == 0) {
 			warning("Positions are not assigned in gene ", gene, ", skipped")
-			return(list(m0 = m0, df = NULL))
+			return(list(m0 = m0, m1 = 0))
 		} else {
 			v <- order(df$POS)
 			df <- df[v, ]
@@ -190,10 +222,15 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 			}
 			if (max(df$POS) == min(df$POS)) df$POS <- .5
 			if (flip.genotypes == TRUE) {
+			#browser()
 				flip <- sumstat.flipper(U, df$Z, df$AF)
 				U <- flip$U
 				df$Z <- flip$Z
 			}
+		}
+		if (Urank(U) <= k) {
+			warning("Gene ", gene, " skipped due to (near-)collinearity")
+			return(list(m0 = m0, m1 = m1))
 		}
 	}
 
@@ -207,7 +244,9 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, quiet, phred, test)
 		#diag(U) <- 1
 	} else { U <- NULL }
 	
-	list(m0 = m0, df = df, U = U, n = n)
+	if (approximation) return(list(m0 = m0, m1 = m1, df = df, p.sum = p.sum, U = U, n = n))
+	
+	list(m0 = m0, m1 = m1, df = df, U = U, n = n)
 	
 }
 
@@ -255,3 +294,7 @@ LH <- function(x, eigval, vecUZ2){ # max LH
    sum(log(ex)) + sum(vecUZ2/ex)
 }
 
+Urank <- function(U) {
+	Q <- suppressWarnings(chol(U, pivot = TRUE))
+    attr(Q, "rank")
+}

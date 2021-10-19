@@ -2,7 +2,7 @@
 
 integrateNEW = function(T0,katint,q1,Pmin,m1) {
  p.value = try({ T0 + integrate(katint,0,q1,subdivisions=1000,abs.tol=1e-25)$val }, silent=TRUE)
- return(p.value) 
+ p.value
 }
 #--------------------------------------------------------
 search.subregions <- function(x,threshold){
@@ -16,44 +16,29 @@ search.subregions <- function(x,threshold){
 }
 
 #-------------------------------------------------------
+sumstat.SKATO <- function(obj) {   #### upgraded by G.R. Svishcheva
 
-sumstat.SKATO <- function(obj) {
-
-	with(obj, with(df, { # Z, U, w, method, acc, lim, rhos, p.threshold
-
-		Q05 <- w * Z  # weighting of Z-score statistic
-		KKK <- t(U * w) * w  # kernel matrix
-		m1 <- length(Z)
-	#if (m1 >= 50){  # begin for long region
-	#    p.threshold <- 0.95
-		if (p.threshold > 0) {
-			threshold = qnorm (1. - (p.threshold/2))
-			A <- as.matrix(search.subregions(Z, threshold))
-			if (dim(A)[2] > 1) {
-				Q05 <- t(A) %*% Q05
-				KKK <- t(A) %*% KKK %*% A  # compressed kernel matrix
-				m1 <- length(Q05)
-			} # end
-		}
+	with(obj, with(df, { # Z, U, w, Pi, method, acc, lim, rhos, p.threshold, p.sum
+	
+		Q05 <- w * Z             ### weighting the Z-score statistics by w, where w = W*V*Pi
+		KKK <- t(U * w) * w      ### weighting the kernel matrix
+		m1  <- length(Z)         ### length of gene
+	
+	if (method != 'hybrid')	{  #------------------  1 --------------------------
 		
-		if (method != 'hybrid')	{
-			eig <- eigen(KKK, symmetric = TRUE)
-			eig$values[eig$values <= 0] <- 1e-7
-
-			C05 <- t(eig$vec) * sqrt(eig$val)   #C05 <- eig$vec %*% (t(eig$vec) * sqrt(eig$val))
 			Q.all <- c()
-			
-			aaa <- sum(Q05^2); bbb <-(sum(Q05))^2
+			bbb <-(sum(Q05))^2 #BT
+			aaa <- sum((Q05^2)/Pi) #SKAT
+
 			for (rh in rhos) {
-				Q <- aaa*(1-rh) + bbb *rh
+				Q <- aaa*(1-rh) + bbb *rh;
 				Q.all <- c(Q.all, Q)
 			}
-			
 			Q <- rbind(Q.all, NULL)
-			out <- SKAT_Optimal_Get_Pvalue(Q, C05, rhos, method, acc, lim)
-			return(out$p.value[1])
-			
-		} else {
+			out <- SKAT_Optimal_Get_Pvalue(Q, KKK, rhos, Pi, method, acc, lim)
+			pSKATO <- out$p.value[1]  
+						
+		} else {               #------------------- 2 ---------------------------
 
 		  K = length(rhos); K1 = K
 		  Qs = sum(Q05^2) ;   Qb = sum(Q05)^2 ;   Qw = (1-rhos)*Qs + rhos*Qb
@@ -77,7 +62,7 @@ sumstat.SKATO <- function(obj) {
 		  qval = rep(0,K1)
 		  for(k in 1:K1) qval[k] = Liu.qval.mod(Pmin, Lamk[[k]])
 			
-		  SVD<-eigen(KKK - outer(Rs,Rs)/R1, symmetric=TRUE, only.values = TRUE)$val #SVD1<-svd(KKK - outer(Rs,Rs)/R1, nu=0,nv=0)$d
+		  SVD<-eigen(KKK - outer(Rs,Rs)/R1, sym=TRUE, only.values = TRUE)$val #SVD1<-svd(KKK - outer(Rs,Rs)/R1, nu=0,nv=0)$d
 
 		  lam = pmax(SVD[-m1], 0) 	
 		  tauk = (1-rho1)*R2/R1 + rho1*R1;  vp2 = 4*(R3/R1-R2^2/R1^2)
@@ -102,20 +87,23 @@ sumstat.SKATO <- function(obj) {
 		#-----------------------
 		 
 			X1<-(1-rho1); X2 <-  sd1 * qval/X1 + MMM; X3 <- sd1 * tauk/X1
-
 			p.value <- integrateNEW(T0,katint,q1,Pmin,m1)
+			pSKATO <- min(p.value, Pmin*K)
 
-			min(p.value, Pmin*K)
+		} #### ------- end 2 ---------
 
+		if (exists('p.sum')) {  ### large gene approx
+			pSKATO <-  ACATO(c(pSKATO, p.sum))
 		}
-
+		return(pSKATO)
+	
 	}))
-
 }
 
 
-'SKATO' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', anno.type = '', beta.par = c(1, 25), weights.function = NULL,
-user.weights = FALSE, method = 'kuonen', acc = 1e-8, lim = 1e+6, rho = TRUE, p.threshold = 0.8, write.file = FALSE, quiet = FALSE) {
+'SKATO' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', approximation = TRUE, anno.type = '', beta.par = c(1, 25),
+weights.function = NULL, user.weights = FALSE, method = 'kuonen', acc = 1e-8, lim = 1e+6, rho = TRUE, p.threshold = 0.8, write.file = FALSE,
+quiet = FALSE) {
 
 	if (length(rho) == 1) {
 		if (!rho) stop("rho should be either 'TRUE' or a vector of grid values")

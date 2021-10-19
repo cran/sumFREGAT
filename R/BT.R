@@ -1,20 +1,17 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
-
+# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 sumstat.BT <- function(obj) {
 
-	with(obj, with(df, { # Z, U, w
+	with(obj, with(df, { # Z, U, w, p.sum
 		chi2 <- sum(w * Z) ^ 2
 		KKK <- sum(t(U * w) * w) 
 		chi2 <- chi2/KKK
-		p <- pchisq(chi2, 1, lower.tail = FALSE)
+		pBurden <- pchisq(chi2, 1, lower.tail = FALSE)
 		betaBT <- sum(w * Z)/KKK * length(w)
 		se.beta <- sqrt((betaBT ^ 2) / chi2)
-		return(c(p, betaBT, se.beta))
-
+		return(c(pBurden, betaBT, se.beta))
 	}))
 
 }
-
 
 'BT' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
 anno.type = '', beta.par = c(1, 25), weights.function = NULL,

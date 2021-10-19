@@ -4,7 +4,7 @@ sumstat.ACAT <- function(obj){
 	with(obj, with(df, {# Z, w
 	#browser()
 	p <- pnorm(abs(Z), lower = FALSE) * 2
-	p[p == 1] <- 0.999
+    p[p == 1] <- 1 - 1e-16
 #	v <- p != 1
 #	p <- p[v]
 #	w <- w[v]

@@ -9,7 +9,7 @@
 	require genotype or phenotype data. Methods implemented are SKAT and SKAT-O
 	(sequence kernel association tests), BT (burden test), ACAT (aggregated Cauchy
 	association test), FLM (functional linear model), PCA (principal components analysis),
-	MLR (multiple linear regression), and others.
+	and others.
 }
 \details{
 Package: sumFREGAT\cr

@@ -5,7 +5,6 @@
 \alias{BT}
 \alias{PCA}
 \alias{FLM}
-\alias{MLR}
 \alias{simpleM}
 \alias{minp}
 \alias{ACAT}
@@ -15,24 +14,24 @@ A set of tests for gene-based association analysis on GWAS summary statistics:
 sequence kernel association tests ('SKAT', 'SKATO'), sum of chi-squares ('sumchi'),
 aggregated Cauchy association test ('ACAT'), burden test ('BT'), principal component
 analysis-based test ('PCA'), functional linear model-based test ('FLM'),
-multiple linear regression ('MLR'), Bonferroni correction test ('simpleM'),
-minimum P value test ('minp').
+Bonferroni correction test ('simpleM'), minimum P value test ('minp').
 }
 \usage{
 SKAT(score.file, gene.file, genes = "all", cor.path = "cor/",
-anno.type = "", beta.par = c(1, 25), weights.function = NULL,
-user.weights = FALSE, gen.var.weights = "se.beta", method = "kuonen",
-acc = 1e-8, lim = 1e+6, rho = FALSE, p.threshold = 0.8,
+approximation = TRUE, anno.type = "", beta.par = c(1, 25),
+weights.function = NULL, user.weights = FALSE, gen.var.weights = "se.beta",
+method = "kuonen", acc = 1e-8, lim = 1e+6, rho = FALSE, p.threshold = 0.8,
 write.file = FALSE, quiet = FALSE)
 
 SKATO(score.file, gene.file, genes = "all", cor.path = "cor/",
-anno.type = "", beta.par = c(1, 25), weights.function = NULL,
-user.weights = FALSE, method = "kuonen", acc = 1e-8, lim = 1e+6,
-rho = TRUE, p.threshold = 0.8, write.file = FALSE, quiet = FALSE)
+approximation = TRUE, anno.type = "", beta.par = c(1, 25),
+weights.function = NULL, user.weights = FALSE, method = "kuonen",
+acc = 1e-8, lim = 1e+6, rho = TRUE, p.threshold = 0.8, write.file = FALSE,
+quiet = FALSE)
 
 sumchi(score.file, gene.file, genes = "all", cor.path = "cor/",
-anno.type = "", method = "kuonen", acc = 1e-8, lim = 1e+6,
-write.file = FALSE, quiet = FALSE)
+approximation = TRUE, anno.type = "", method = "kuonen", acc = 1e-8,
+lim = 1e+6, write.file = FALSE, quiet = FALSE)
 
 ACAT(score.file, gene.file, genes = "all", anno.type = "",
 beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
@@ -43,19 +42,15 @@ anno.type = "", beta.par = c(1, 25), weights.function = NULL,
 user.weights = FALSE, write.file = FALSE, quiet = FALSE)
 
 PCA(score.file, gene.file, genes = "all", cor.path = "cor/",
-anno.type = "", n, beta.par = c(1, 1), weights.function = NULL,
-user.weights = FALSE, reference.matrix = TRUE, fun = "LH",
-var.fraction = 0.85, write.file = FALSE, quiet = FALSE)
+approximation = TRUE, anno.type = "", n, beta.par = c(1, 1),
+weights.function = NULL, user.weights = FALSE, reference.matrix = TRUE,
+fun = "LH", var.fraction = 0.85, write.file = FALSE, quiet = FALSE)
 
 FLM(score.file, gene.file, genes = "all", cor.path = "cor/",
-anno.type = "", n, beta.par = c(1, 1), weights.function = NULL,
-user.weights = FALSE, basis.function = "fourier", k = 25, order = 4,
-flip.genotypes = FALSE, Fan = TRUE, reference.matrix = TRUE,
-fun = "LH", write.file = FALSE, quiet = FALSE)
-
-MLR(score.file, gene.file, genes = "all", cor.path = "cor/",
-anno.type = "", n, reference.matrix = TRUE, fun = "LH",
-write.file = FALSE, quiet = FALSE)
+approximation = TRUE, anno.type = "", n, beta.par = c(1, 1),
+weights.function = NULL, user.weights = FALSE, basis.function = "fourier",
+k = 25, order = 4, flip.genotypes = FALSE, Fan = TRUE,
+reference.matrix = TRUE, fun = "LH", write.file = FALSE, quiet = FALSE)
 
 simpleM(score.file, gene.file, genes = "all", cor.path = "cor/",
 anno.type = "", var.fraction = .995, write.file = FALSE, quiet = FALSE)
@@ -97,6 +92,9 @@ anno.type = "", write.file = FALSE, quiet = FALSE)
 	system.file("testfiles/CFH.cor", package = "sumFREGAT")\cr
 	system.file("testfiles/CFH.RData", package = "sumFREGAT")\cr
 	}
+
+	\item{approximation}{a logical value indicating whether approximation for large genes (>= 500 SNPs) should be used.
+	Applicable for SKAT, SKATO, sumchi, PCA, FLM (default = TRUE for these methods).}
 
 	\item{anno.type}{given (functional) annotations provided by user (see) \code{prep.score.files()},
 	a character (or character vector) indicating annotation types to be used.}
@@ -210,8 +208,7 @@ anno.type = "", write.file = FALSE, quiet = FALSE)
 	'PCA' test is based on the spectral decomposition of
 	correlation matrix among genetic variants. The number of top principal components will be chosen
 	in such a way that >= \code{var.fraction} of region variance can be explained by these PCs.
-	By default, \code{var.fraction} = 0.85, i.e. PCs explain >= 85\% of region variance.
-	If \code{var.fraction} = 1 then the results of PCA test and MLR-based test are identical.\cr
+	By default, \code{var.fraction} = 0.85, i.e. PCs explain >= 85\% of region variance.\cr
 	
 	A similar principle is used in 'simpleM' to calculate the effective number of independent tests.\cr
 	
@@ -239,7 +236,6 @@ anno.type = "", write.file = FALSE, quiet = FALSE)
 	- FLM() returns the names of the functional models used for each region.
 	Names shortly describe the functional basis and the number of basis functions used.
 	E.g., "F25" means 25 Fourier basis functions, "B15" means 15 B-spline basis functions.
-	"MLR" means that standard multiple linear regression was applied.
 	\cr
 	- PCA() returns the number of the principal components
 	used for each region and the proportion of genetic variance
@@ -294,6 +290,5 @@ SKATO(score.file, gene.file = "hg19", genes = "CFH", cor.path = cor.path)
 
 PCA(score.file, gene.file = "hg19", genes = "CFH", cor.path = cor.path, n = 85)
 FLM(score.file, gene.file = "hg19", genes = "CFH", cor.path = cor.path, n = 85)
-MLR(score.file, gene.file = "hg19", genes = "CFH", cor.path = cor.path, n = 85)
 
 }

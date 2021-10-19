@@ -1,63 +1,54 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
-
-"%^%" <- function(U, k) {
-	UUU <- eigen(U, symmetric = TRUE)  # UUU = Uvec %*% diag(Uval) %*% t(Uvec)
-	Uval <- UUU$val
-	Uvec <- UUU$vec
-	Uvec <- Uvec[, Uval > 1e-7]
-	Uval <- Uval[Uval > 1e-7]
-	Uvec %*% (t(Uvec) * (Uval ^ k))   #	Uvec %*% (diag(Uval ^ k) %*% t(Uvec))
-
-}
+# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 sumstat.PCA <- function(obj) {
 
-	with(obj, with(df, { # Z, w, U, n, var.fraction
-
+	with(obj, with(df, { # Z, w, U, n, var.fraction, p.sum
+		m1  <- length(Z)         ### length of gene
 		WZ  <- as.vector(w * Z) * sqrt(n)
 		WUW <- as.matrix(t(U * w) * w) * n
-		numberPCA(WZ, WUW, n, var.fraction)
-
+		pPCA <- numberPCA(WZ, WUW, n, var.fraction) ### function output: c(minP, minM, prop.variance[minM])
+		
+		if (exists('p.sum')) {  ### large gene approx
+			pPCA[1] <- ACATO(c(pPCA[1], p.sum))
+		}
+		return(pPCA)
 	}))
 
 }
 
 numberPCA <- function(WZ, WUW, n, var.fraction) {
-	pCA <- PC(WUW) # n = N - 1
-	CPV <- pCA$importance   # Cumulative Proportion of Variance (CPV)
-	M <- min(which(CPV >= var.fraction))  # components for which Explained variance fraction is about 85%
-	BBB <- as.matrix(pCA$scores[,1:M])
-	GY <- as.vector(t(BBB) %*% WZ)
-	CC <- as.matrix(t(BBB) %*% WUW %*% BBB)
-	m <- qr(BBB)$rank
-	if (m > 1) {
-		RSS <- (n - sum(GY * as.vector((CC %^% (-1)) %*% GY)))
-	} else { RSS <- (n - GY * GY / CC) }
+	pCA <- PC(WUW)                           ### n = N - 1 
+	CPV <- pCA$importance                    ### Cumulative Proportion of Variance (CPV)
+	M   <- min(which(CPV >= var.fraction))   ### components for which Explained variance fraction is about 85%
+	#browser()
+	BBB <- pCA$scores[,1:M]                  ### the truncated matrix of eigen.vectors  as.matrix
+	GY  <- t(BBB) %*% WZ                     ### crossprod (BBB, WZ) as.vector
+	CC  <- pCA$eig.values[1:M]               ### CC <-  as.matrix(t(BBB) %*% (WUW %*% BBB))
+	m <- min(pCA$rank, M)                  ### m=qr(BBB)$rank 
+	RSS   <-  n - sum(GY^2 / CC)             ### RSS <- (n - sum(GY * as.vector(solve(CC , GY))))
 	Fstat <- ((n - m) / m) * (n - RSS) / RSS    # F-statistic
 	p <- pf(Fstat, m, n - m, lower.tail = FALSE)
-	minP <- 100;
-	minM <- 0
-	if (p < minP) minM <- M
-	minP <- min(p, minP)
-	c(minP, minM, CPV[minM])
+	#minP <- 100;
+	#minM <- 0
+	#if (p < minP) minM <- M
+	#minP <- min(p, minP)
+	#c(minP, minM, CPV[minM])
+	c(p, M, CPV[M])
 }
 
 PC <- function(X) {
 	eX1 <- eigen(X, symmetric = TRUE)
-	#values <- eX1$values
-	#vectors <- eX1$vectors
 	with (eX1, {
-		values[values < 0] <- 0
-		#scorenames <- paste('PC', 1:ncol(X), sep = '')
-		#colnames(vectors) <- scorenames;
-		#rownames(vectors) <- colnames(X)
+	    rank <- sum(values > 1e-7)
+		values <- values[1:rank]
 		prop.var <- values / sum(values)
 		cum.var <- cumsum(prop.var)
-		list(scores = vectors, importance = cum.var)
+	#browser()
+		list(scores = as.matrix(vectors[,1:rank]), importance = cum.var, rank=rank, eig.values=values)
 	})
 }
 
-'PCA' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
+'PCA' <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', approximation = TRUE,
 anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
 reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE) {
 
@@ -65,7 +56,7 @@ reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, qu
 
 }
 
-PCA.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
+PCA.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', approximation = TRUE,
 anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
 reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE, prob, phred) {
 
@@ -75,6 +66,10 @@ tmp <- check.input(score.file, cor.path, gene.file, genes)
 for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
 
 ############ SPECIFIC CHECKS
+if (var.fraction > .99) {
+warning('var.fraction too large, reset to 0.99')
+var.fraction <- .99
+}
 
 tmp <- check.weights(weights.function, beta.par)
 for (i in 1:length(tmp)) assign(names(tmp)[i], tmp[[i]])
@@ -86,6 +81,7 @@ check.list <- get.check.list('PCA', score.file, anno.type, user.weights, gen.var
 ############ ANALYSIS
 
 genewise(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = list(var.fraction = var.fraction),
-	ncl = 5, c('ncomponents', 'explained.variance.fraction'), gen.var.weights, fweights, reference.matrix, fun, n, quiet = quiet, phred = phred, test = 'PCA')
+	ncl = 5, c('ncomponents', 'explained.variance.fraction'), gen.var.weights, fweights, reference.matrix, fun, n, 
+	quiet = quiet, phred = phred, approximation = approximation, test = 'PCA')
 
 }

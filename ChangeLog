@@ -6,4 +6,7 @@ sumFREGAT_1.2.0
 - prep.score.file() input now can be R objects
 
 sumFREGAT_1.2.1
-- FFGAS function added as an extension to sumSTAAR procedure
+- sumSTAAR procedure extended
+
+sumFREGAT_1.2.2
+- 'approximation' option added to speed up the calculations for large genes

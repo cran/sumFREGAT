@@ -1,20 +1,15 @@
-\name{FFGAS}
-\alias{FFGAS}
+\name{sumSTAAR}
 \alias{sumSTAAR}
-\title{Flexible Framework for Gene-based Association Study}
+\title{variant-Set Test for Association using Annotation infoRmation on summary statistics}
 \description{
 STAAR procedure developed by Li et al. (2020) adapted to use on summary statistics, with extentions
 }
 \usage{
 
-FFGAS(score.file, gene.file, genes = 'all', cor.path = 'cor/',
-tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), 
-prob.causal = NA, phred = FALSE, n = NA, write.file = FALSE, quiet = FALSE)
-
 sumSTAAR(score.file, gene.file, genes = 'all', cor.path = 'cor/',
 tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), 
-prob.causal = paste0('PROB', 1:10), phred = TRUE, n = NA, write.file = FALSE,
-quiet = FALSE)
+prob.causal = 'all', phred = TRUE, n = NA, approximation = TRUE,
+write.file = FALSE, staar.output = TRUE, quiet = FALSE)
 
 }
 
@@ -53,10 +48,9 @@ quiet = FALSE)
 	}
 	
 	\item{tests}{a character vector with gene-based methods to be applied. By default, three methods are used: 'BT', 'SKAT',
-	and 'ACAT'. Other weighted tests ('PCA', 'FLM') can be included in both \code{sumSTAAR()} and \code{FFGAS()}. Tests that do not imply
-	weighting ('MLR', 'simpleM', 'minP', 'sumchi') can be used in \code{FFGAS()} to be calculated once and combined along with other tests
-	into the total FFGAS p-value. 'SKATO' can be used in \code{FFGAS()} with different beta weighting modes (probabilities will not be applied).
-	ACAT performs with \code{gen.var.weights = "af"} for consistency with STAAR.}
+	and 'ACAT'. Other weighted tests ('SKATO', 'PCA', 'FLM') can be included. Tests that do not imply
+	weighting ('simpleM', 'minP', 'sumchi'), if listed, will be calculated once and combined along with other tests
+	into the total sumSTAAR p-value. ACAT performs with \code{gen.var.weights = "af"} for consistency with STAAR.}
 
 	\item{beta.par.matrix}{an (n x 2) matrix with rows corresponding to n \code{beta.par} values used sequentially. Default value
 	\code{rbind(c(1, 1), c(1, 25))} means that \code{beta.par = c(1, 1)} and \code{beta.par = c(1, 25)} will be applied. \code{beta.par}
@@ -65,17 +59,21 @@ quiet = FALSE)
 
 	\item{prob.causal}{a character vector to define a set of annotations to be used. Annotations should be initially passed to
 	\code{prep.score.files} (see \code{prep.score.files()} function) as input file columns "PROB", "PROB1", "PROB2", "PROB3" etc.
-	The same naming should be used for \code{prob.causal} argument.}
+	The same naming should be used for \code{prob.causal} argument. By default, all "PROB" columns will be used. Annotations 
+	are expected to be in PHRED scale, set \code{phred = FALSE} to use simple probabilities.}
 
 	\item{phred}{a logical value indicating whether probabilities are in PHRED scale. If \code{TRUE} (default for \code{sumSTAAR()}), PHRED-to-probability
-	transformation will be performed for values indicated in \code{prob.causal}. In \code{FFGAS()}), probabilities are treated directly
-	as probabilities by default (\code{phred = FALSE}).}
+	transformation will be performed for values indicated in \code{prob.causal}.}
 
-	\item{n}{size of the sample on which summary statistics were obtained. Should be assigned if 'PCA', 'FLM' or 'MLR'
+	\item{n}{size of the sample on which summary statistics were obtained. Should be assigned if 'PCA' or 'FLM'
 	are included in \code{tests}.}
+
+	\item{approximation}{logical value indicating whether approximation should be used for SKAT, SKATO, PCA and FLM.}
 
 	\item{write.file}{output file name. If specified, output for all tests (as it proceeds) will be written 
 	to corresponding files.}
+
+	\item{staar.output}{logical value indicating whether extensive output format should be used (see Details).}
 
 	\item{quiet}{\code{quiet = TRUE} suppresses excessive output from reading vcf file genewise.}
 
@@ -87,10 +85,10 @@ a set of P values using a range of gene-based tests, beta distribution weights p
 }
 \value{
 	
-	\code{FFGAS()} returns a data table with a single P value for each test (combinations of differently weighted and unweighted
-	iterations of the same test) and a total FFGAS P value. ACAT-O method is used to combine P values (Liu, Y. et al., 2019).\cr
+	With \code{staar.output = FALSE} returns a data table with a single P value for each test (combinations of differently weighted and unweighted
+	iterations of the same test) and a total sumSTAAR P value. ACAT-O method is used to combine P values (Liu, Y. et al., 2019).\cr
 	
-	\code{sumSTAAR()} generates a data frame of size (n.genes x (n.tests x n.beta.pars x (n.annotations + 1) + n.tests + 2)) containing P values
+	If \code{staar.output = TRUE} the function returns a data frame of size (n.genes x (n.tests x n.beta.pars x (n.annotations + 1) + n.tests + 2)) containing P values
 	for combined tests and all individual tests. The output is analogous to that of original STAAR procedure. For example,
 	by default, the output will contain columns:\cr\cr
 	gene # gene symbol\cr
@@ -136,12 +134,14 @@ a set of P values using a range of gene-based tests, beta distribution weights p
 cor.path <- system.file("testfiles/", package = "sumFREGAT")
 score.file <- system.file("testfiles/CFH.prob.vcf.gz",
 	package = "sumFREGAT")
-FFGAS(score.file, prob.causal = "PROB", gene.file = "hg19", genes = "CFH", cor.path, quiet = TRUE)
+sumSTAAR(score.file, prob.causal = "PROB", gene.file = "hg19",
+	genes = "CFH", cor.path, quiet = TRUE)
 
 \dontrun{
 
 score.file <- system.file("testfiles/CFH.prob.phred.vcf.gz",
 	package = "sumFREGAT")
-res <- sumSTAAR(score.file, gene.file = "hg19", genes = "CFH", cor.path, quiet = TRUE)
+res <- sumSTAAR(score.file, gene.file = "hg19", genes = "CFH",
+	cor.path, quiet = TRUE)
 }
 }

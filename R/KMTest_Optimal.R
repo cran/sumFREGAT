@@ -2,7 +2,7 @@
 
 #	Function get parameters of optimal test
 #
-SKAT_Optimal_Param<-function(Z1,r.all){
+SKAT_Optimal_Param <- function(Z1,r.all){
 
 	n<-dim(Z1)[1]
 	p.m<-dim(Z1)[2]
@@ -45,7 +45,7 @@ SKAT_Optimal_Param<-function(Z1,r.all){
 #	Function get SKAT statistics with given rho
 #		Q.all is a matrix with n.q x n.r
 
-SKAT_Optiaml_Each_Q<-function(param.m, Q.all, r.all, lambda.all, method=NULL){
+SKAT_Optiaml_Each_Q <-function(param.m, Q.all, r.all, lambda.all, method=NULL){
 
 	n.r<-length(r.all)
 	c1<-rep(0,4)
@@ -230,49 +230,53 @@ SKAT_Optimal_PValue_Liu<-function(pmin.q,param.m,r.all, pmin=NULL){
 
 }
 
-SKAT_Optimal_Get_Pvalue<-function(Q.all, Z1, r.all, method, acc, lim){
-#### Z1: kernel matrix ^ 0.5
-	n.r<-length(r.all)   # the number of rhos
-	n.q<-dim(Q.all)[1]   # the number of Qs
-	p.m<-dim(Z1)[2]      # the number of ms
-	
-    Z1e <-  rowSums(Z1)    
-	Z1e_2 <- Z1e %*% t(Z1e)   #matrix
-	Z1_2 <- Z1 %*% t(Z1); ZZZ <- Z1_2 - Z1e_2
-	AS<-t(Z1) %*% Z1
-	SumElem <- sum(AS)
-	lambda.all<-list()
+
+
+### 14/09/2021  ### upgraded  by G.R.Svishcheva
+SKAT_Optimal_Get_Pvalue <- function(Q.all, KKK, r.all, Pi, method, acc, lim){
+
+	        ### for LARGE gene
+			#### begin NEW
+			C05 <- suppressWarnings(chol(KKK, pivot = TRUE, tol = 1e-7))  ### KKK = t(C05) %*% C05    
+			ran  <- attr(C05, "rank")
+			#cat(ran, file = 'rank.out', append = T)
+			if (ran == 1) return(list(ran=ran,ran1=NA,p.value=1,p.val.each=rep(1, nrow(Q.all))))
+			if (ran < nrow(KKK)) C05[-(1:ran), -(1:ran)] <- 0
+			oo   <- order(attr(C05, "pivot"))
+			Z1   <- as.matrix(C05[,oo])  ### Right Chol-matrix
+			vec0 <- rowSums(Z1^2)  #vec0 <- rowSums(abs(Z1))
+			Z1   <- Z1[which(vec0 > 1e-7) , ]
+			#### end NEW
+#}
+
+#### Z1: truncated kernel matrix ^ 0.5
+	n.r <- length(r.all)   # the number of rhos
+	n.q <- nrow(Q.all)     # dim(Q.all)[1]   # the number of Qs
+	                       # p.m <- ran  # the number of indep.linear combinations of ms
+
+    Z1e   <-  rowSums(Z1)    
+	Z1e_2 <- tcrossprod(Z1e)      ### Z1e %*% t(Z1e)   # matrix  
+#	Z1_2  <- tcrossprod(Z1)       ### Z1 %*% t(Z1) 
+	Z1_2  <- Z1 %*% (t(Z1) * (1/Pi))    ### Z1 %*% diag(1/Pi) %*% t(Z1) 
+
+	ZZZ   <- Z1_2 - Z1e_2
+
+	SumElem    <- sum(KKK)
+	lambda.all <- lambda1.all <- list()
+
 
 	for(i in 1:n.r){ ######################
-	 r.corr<-r.all[i]
+	 r.corr <- r.all[i]
 	 K1<- Z1_2 - r.corr * ZZZ
-	  
 	 
-	 if( p.m >= 5000){         # approximation works when the number of genetic variants > 500 !!!!
-	 
-        if (i==1) {
-			lambda.all[[1]] <- Get_Lambda(K1)   # all lambdas under r.corr == 0
-	    } else if (i<n.r){
-			lambda.all[[i]]    <- lambda.all[[1]] * (1.-r.corr) 			   #  (1-ro)*eigen(U)$val[2]
-			lambda.all[[i]][1] <- lambda.all[[1]][1]*(1.-r.corr) + r.corr*SumElem  #  (1-ro)*eigen(U)$val[1] + ro*sum(U)
-		} else {
-		 lambda.all[[n.r]] = 0
-         lambda.all[[n.r]][1] = SumElem		
-		}
-		
-	    } else {
-			if (i<n.r){
+			if (i<n.r){                         ### SKAT and mixtures with SKAT
 				lambda.all[[i]] <- Get_Lambda(K1)
-			} else{
-				lambda.all[[n.r]] = 0
-				lambda.all[[n.r]][1] = SumElem	
-		}
-		}
+				} else{                             ### burden
+				lambda.all[[n.r]] <- 0            
+				lambda.all[[n.r]][1] <- SumElem	
+			}
+			
 	}	#################
-
-	    
-	 
-		
 	
 ###---------------------------
 	# Get Mixture param 
@@ -325,7 +329,7 @@ SKAT_Optimal_Get_Pvalue<-function(Q.all, Z1, r.all, method, acc, lim){
 		}
 	
 	}
-	
-	return(list(p.value=pval,p.val.each=Each_Info$pval))
+	return(list(ran=ran,ran1=dim(Z1)[1],p.value=pval,p.val.each=Each_Info$pval))
 
 }
+

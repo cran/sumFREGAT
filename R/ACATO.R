@@ -1,9 +1,10 @@
-# ACAT function by Yaowu Liu, with minor changes
+# ACAT function by Yaowu Liu, with changes
 
 ACATO <- function(p){
     if (all(is.na(p))) return(NA)
     p <- p[!is.na(p)]
-    #### check if there are very small non-zero p values
+    p[p == 1] <- 1 - 1e-16
+#### check if there are very small non-zero p values
     is.small <- (p < 1e-16)
     if (sum(is.small) == 0) {
         cct.stat <- sum(tan((0.5 - p) * pi))/length(p)

@@ -2,20 +2,31 @@
 
 
 check.sumstat <- function(obj, lgt, test = '') {
+#browser()
+	if (!'df' %in% names(obj)) {
+		if ('p.sum' %in% names(obj)) {  ### approx & all pvals large
+			return(c(0, obj$p.sum, rep(NA, lgt - 1)))
+		}
+		return(c(0, rep(NA, lgt)))
+	}
 
-	m0 <- obj$m0
-	if (is.null(obj$df$Z)) {
-		return(c(0, 0, rep(NA, lgt)))
-	}
-	m1 <- dim(obj$df)[1]
-	if (m1 == 1) {
-		if (test == 'BT') { # check that
+	m <- dim(obj$df)[1]
+#browser()
+	if (m == 1) {
+		obj$df$Z <- as.numeric(obj$df$Z)
+		p <- pnorm(abs(obj$df$Z), lower.tail = FALSE) * 2
+		if (test == 'BT') {
+			obj$df$SE.Beta <- as.numeric(obj$df$SE.Beta)
 			beta <- sign(obj$df$Z) * sqrt((obj$df$Z ^ 2) * (obj$df$SE.Beta ^ 2))
-			return(c(m0, m1, pnorm(abs(obj$df$Z), lower.tail = FALSE) * 2, beta, obj$df$SE.Beta))
-			}
-		return(c(m0, m1, pnorm(abs(obj$df$Z), lower.tail = FALSE) * 2, rep(NA, lgt - 1)))
+			return(c(0, p, beta, obj$df$SE.Beta))
+		}
+		if ('p.sum' %in% names(obj)) {  ###  approx & all but one large pvals
+			p <-  ACATO(c(p, obj$p.sum))
+		}
+		return(c(0, p, rep(NA, lgt - 1)))
 	}
-	m1
+
+	1
 
 }
 
@@ -87,7 +98,7 @@ detect.cor.file.ext <- function(cor.path, gene) {
 	return(NULL)
 }
 
-get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, gen.var.weights = FALSE, fweights = NULL, rho = FALSE, n = NULL) {
+get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, gen.var.weights = FALSE, fweights = NULL, rho = FALSE, n = NULL, flip.genotypes = FALSE) {
 
 	con <- file(score.file, "r")
 	h <- c()
@@ -117,7 +128,7 @@ check.list <- c()
 		check.list <- c(check.list, 'SE.Beta')
 	}
 
-	if (!is.null(fweights) | gen.var.weights == 'af') {
+	if (!is.null(fweights) | gen.var.weights == 'af' | (test == 'FLM' & flip.genotypes)) {
 		if (!grepl('Frequency', h, ignore.case = TRUE)) stop ('Allele frequencies not found in input file, consider changing "beta.par" and "gen.var.weights" parameters"')
 		check.list <- c(check.list, 'AF')
 	}
