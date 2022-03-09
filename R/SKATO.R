@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 integrateNEW = function(T0,katint,q1,Pmin,m1) {
  p.value = try({ T0 + integrate(katint,0,q1,subdivisions=1000,abs.tol=1e-25)$val }, silent=TRUE)

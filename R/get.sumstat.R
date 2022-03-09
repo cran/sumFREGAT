@@ -1,10 +1,10 @@
-# sumFREGAT (2017-2020) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 get.sumstat <- function(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list, reference.matrix, gen.var.weights = FALSE,
-fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, k, quiet, phred, approximation, test) {
+fweights = NULL, mac.threshold = NA, n = NULL, staar = FALSE, Fan = FALSE, flip.genotypes, fun, k, quiet, phred, approximation, test) {
 
 	uw <- check.list[length(check.list)]
-	if (uw == 'Z') uw <- 0
+	if (uw == 'Z') uw <- ''
 
 	### read gene info
 	df <- c()
@@ -18,7 +18,6 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, k, quiet, phred, ap
 		warning("No variants to analyze in gene ", gene, ", skipped")
 		return(list(m0 = 0, m1 = 0))
 	}
-
 	m0 <- dim(df)[1]
 	df[df == 'NA'] <- NA
 	if (m0 == 1) return(list(m0 = m0, m1 = 1, df = df))
@@ -28,7 +27,6 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, k, quiet, phred, ap
 	doU <- ifelse (test != 'ACAT', 1, 0)
 	
 	if (doU) {
-
 		cor.file <- paste0(cor.path, gene, cor.file.ext)
 		if (!file.exists(cor.file)) {
 			warning("No correlation file for gene ", gene, ", skipped")
@@ -64,12 +62,20 @@ fweights = NULL, n = NULL, Fan = FALSE, flip.genotypes, fun, k, quiet, phred, ap
 
 		U.na <- is.na(U)
 		v <- which(colSums(!U.na) <= 1)
-		if (length(v) > 0) U <- as.matrix(U[-v, -v])
-		if (length(U) > 0) {
-			U.na <- is.na(U)
-			v <- which(colSums(U.na) > 0)
-			if (length(v) > 0) U <- as.matrix(U[-v, -v])
+		if (length(v) > 0) {
+			U <- as.matrix(U[-v, -v])
+			df <- df[-v, ]
 		}
+		if (length(U) > 0) {
+			U.na <- which(is.na(U), arr.ind = TRUE)
+			while(length(U.na) > 0) {
+				v <- as.numeric(names(sort(-summary(as.factor(U.na), maxsum = dim(U)[1]))[1]))
+				U <- U[-v, -v]
+				df <- df[-v, ]
+				U.na <- which(is.na(U), arr.ind = TRUE)
+			}
+		}
+
 		if (length(U) == 0) {
 			warning("No correlation values for gene ", gene, ", skipped")
 			return(list(m0 = m0, m1 = 0))
@@ -101,25 +107,6 @@ gc()
 	}
 	if (sum(v) == 1) return(list(m0 = m0, m1 = 1, df = df))
 
-	if (test == 'SKATO') df$Pi <- rep(1, dim(df)[1])
-
-	if (uw == 0) {
-		df$w <- rep(1, dim(df)[1])
-	} else {
-		colnames(df)[colnames(df) == uw] <- 'w'
-		if (uw != 'W') { # PROB case
-			if (phred) {
-				df$w <- 1 - 10^(-df$w/10)
-			} else {
-				if (any(df$w < 0 | df$w > 1)) warning ("Probabilities are not in range 0..1 for gene ", gene)
-			}
-			if (test == 'SKATO') df$Pi <- df$w
-			if (test %in% c('SKAT', 'ACAT')) {
-				df$w <- sqrt(df$w)
-			}
-		}
-	}
-
 	# check AF
 
 	if ('AF' %in% check.list) {
@@ -137,35 +124,29 @@ gc()
 
 		### flip to minor for BT, SKAT
 
-		if (any(df$AF > .5) & test %in% c('BT', 'SKAT', 'SKATO')) {#, 'MLR')) {
+		if (any(df$AF > .5) & (test %in% c('BT', 'SKAT', 'SKATO') | (test == 'ACAT' & !is.na(mac.threshold)))) {#, 'MLR')) {
 			v <- which(df$AF > .5)
 			df$Z[v] <- -df$Z[v]
 			df$AF[v] <- 1 - df$AF[v]
-			for (i in v) { # reverse correlation for reverse coding
-				U[i, ] <- -U[i, ]
-				U[, i] <- -U[, i]
+			if (doU) {
+				for (i in v) { # reverse correlation for reverse coding
+					U[i, ] <- -U[i, ]
+					U[, i] <- -U[, i]
+				}
 			}
 		}
-
 	}
 
-	### manage weights
-
-	if (!is.null(fweights)) {
-		df$w <- df$w * fweights(df$AF) # df$w already defined as user weights or 1
-	}
-	if (gen.var.weights == "se.beta") {
-		df$w <- df$w / df$SE.Beta
-	} else if (gen.var.weights == "af") { # add this
-		df$w <- df$w * sqrt(2. * df$AF * (1. - df$AF))  #Beta-weighted genotype under HWE
-	}
-	if (!is.na(uw)) {
-		if (uw != 'W' & test == 'ACAT') { # PROB case
-			df$w <- df$w ^ 2
+	if (test == 'ACAT') {
+		if (!is.na(mac.threshold)) {
+			df$is.rare <- round(df$AF * n * 2) <= mac.threshold
+		} else {
+			df$is.rare <- FALSE
 		}
+	n0 <- sum(df$is.rare)
 	}
 
-	# exclude linearly dependent variants for MLR
+### exclude linearly dependent variants for MLR
 
 	if (test == 'MLR' | (test == 'FLM' & Fan)) {
 		v <- Indep.Variants(U)
@@ -174,6 +155,52 @@ gc()
 		U <- as.matrix(U[v, v])
 	}
 
+### manage weights
+
+	if (test == 'SKATO') df$Pi <- rep(1, dim(df)[1]) # for SKAT-specific weights in SKATO
+	# set ini weights
+	if (uw == '') {
+		df$w <- rep(1, dim(df)[1])
+	} else {
+		colnames(df)[colnames(df) == uw] <- 'w'
+		if (uw != 'W') { # PROB case
+			if (phred) {
+				df$w <- 1 - 10^(-df$w/10)
+			} else {
+				if (any(df$w < 0 | df$w > 1)) warning ("Probabilities are not in range 0..1 for gene ", gene)
+			}
+			if (test == 'SKATO') df$Pi <- df$w
+			if (test %in% c('SKAT', 'ACAT')) {
+				df$w <- sqrt(df$w)
+			}
+			if (test == 'ACAT') {
+				if (n0 > 0) {
+					df$wb <- df$w # sqrt anno
+				}
+			}
+		}
+	}
+	
+
+	# with AF
+	if (!is.null(fweights)) {
+		df$w <- df$w * fweights(df$AF) # df$w already defined as user weights or 1
+	}
+	if (gen.var.weights == "se.beta") {
+		df$w <- df$w / df$SE.Beta
+	} else if (gen.var.weights == "af") { # add this
+		df$w <- df$w * sqrt(2. * df$AF * (1. - df$AF))  #Beta-weighted genotype under HWE
+	}
+	if (staar) { # acat
+		if (n0 > 0) { # burden weights
+			if (uw == '') {
+				df$wb <- df$w
+			} else { # anno
+				df$wb <- df$wb * df$w
+			}
+		}
+		df$w <- df$w ^ 2
+	}
 ######## approximation
 
 	m1 <- dim(df)[1]

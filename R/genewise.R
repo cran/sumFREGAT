@@ -1,6 +1,6 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
-genewise <- function(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = NULL, ncl = 3, cn = NULL, gen.var.weights = FALSE, fweights = NULL, reference.matrix = FALSE, fun, n = NULL, Fan = FALSE, flip.genotypes = FALSE, quiet, phred, approximation = FALSE, test) {
+genewise <- function(score.file, gene.file, gf, anno.type, cor.path, cor.file.ext, check.list, write.file, obj0 = NULL, ncl = 3, cn = NULL, gen.var.weights = FALSE, fweights = NULL, reference.matrix = FALSE, fun, n = NULL, mac.threshold = NA, staar = FALSE, Fan = FALSE, flip.genotypes = FALSE, quiet, phred, approximation = FALSE, test) {
 
 	ngenes <- dim(gf)[1]
 	gf <- cbind(gf, matrix(NA, nrow = ngenes, ncol = ncl))
@@ -18,7 +18,7 @@ genewise <- function(score.file, gene.file, gf, anno.type, cor.path, cor.file.ex
 		gene <- as.character(gf[i, 1])
 
 		obj <- c(obj0, get.sumstat(score.file, gene.file, gene, anno.type, cor.path, cor.file.ext, check.list,
-			reference.matrix, gen.var.weights, fweights, n, Fan, flip.genotypes, fun, k = obj0$k, quiet, phred, approximation, test))
+			reference.matrix, gen.var.weights, fweights, mac.threshold, n, staar, Fan, flip.genotypes, fun, k = obj0$k, quiet, phred, approximation, test))
 
 		out <- check.sumstat(obj, nc2, test)
 		if (out[1]) {

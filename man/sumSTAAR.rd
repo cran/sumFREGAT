@@ -8,7 +8,7 @@ STAAR procedure developed by Li et al. (2020) adapted to use on summary statisti
 
 sumSTAAR(score.file, gene.file, genes = 'all', cor.path = 'cor/',
 tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), 
-prob.causal = 'all', phred = TRUE, n = NA, approximation = TRUE,
+prob.causal = 'all', phred = TRUE, n = NA, mac.threshold = NA, approximation = TRUE,
 write.file = FALSE, staar.output = TRUE, quiet = FALSE)
 
 }
@@ -67,6 +67,9 @@ write.file = FALSE, staar.output = TRUE, quiet = FALSE)
 
 	\item{n}{size of the sample on which summary statistics were obtained. Should be assigned if 'PCA' or 'FLM'
 	are included in \code{tests}.}
+
+	\item{mac.threshold}{ an integer number. In ACAT, scores with MAC <= 10 will be combined using Burden test. MACs are calculated
+	from MAFs, \code{n} must be set to apply \code{mac.threshold}. The original STAAR procedure performs with \code{mac.threshold = 10}.}
 
 	\item{approximation}{logical value indicating whether approximation should be used for SKAT, SKATO, PCA and FLM.}
 

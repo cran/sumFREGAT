@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 sumstat.PCA <- function(obj) {
 
@@ -17,34 +17,38 @@ sumstat.PCA <- function(obj) {
 }
 
 numberPCA <- function(WZ, WUW, n, var.fraction) {
-	pCA <- PC(WUW)                           ### n = N - 1 
-	CPV <- pCA$importance                    ### Cumulative Proportion of Variance (CPV)
-	M   <- min(which(CPV >= var.fraction))   ### components for which Explained variance fraction is about 85%
+	pCA <- PC(WUW, var.fraction)                           ### n = N - 1 
+#	CPV <- pCA$importance                    ### Cumulative Proportion of Variance (CPV)
+#	M   <- min(which(CPV >= var.fraction))   ### components for which Explained variance fraction is about 85%
+#	values <- pCA$eig.values
+#	prop.var <- values / sum(values)
 	#browser()
-	BBB <- pCA$scores[,1:M]                  ### the truncated matrix of eigen.vectors  as.matrix
-	GY  <- t(BBB) %*% WZ                     ### crossprod (BBB, WZ) as.vector
-	CC  <- pCA$eig.values[1:M]               ### CC <-  as.matrix(t(BBB) %*% (WUW %*% BBB))
-	m <- min(pCA$rank, M)                  ### m=qr(BBB)$rank 
-	RSS   <-  n - sum(GY^2 / CC)             ### RSS <- (n - sum(GY * as.vector(solve(CC , GY))))
+#	BBB <- pCA$scores[,1:M]                  ### the truncated matrix of eigen.vectors  as.matrix
+#	GY  <- t(BBB) %*% WZ                     ### crossprod (BBB, WZ) as.vector
+#	CC  <- pCA$eig.values[1:M]               ### CC <-  as.matrix(t(BBB) %*% (WUW %*% BBB))
+#	m <- min(pCA$rank, M)                  ### m=qr(BBB)$rank 
+#	RSS   <-  n - sum(GY^2 / CC)             ### RSS <- (n - sum(GY * as.vector(solve(CC , GY))))
+	GY  <- t(pCA$scores) %*% WZ
+	m <- pCA$M 
+	RSS   <-  n - sum(GY^2 / pCA$eig.values)
 	Fstat <- ((n - m) / m) * (n - RSS) / RSS    # F-statistic
 	p <- pf(Fstat, m, n - m, lower.tail = FALSE)
-	#minP <- 100;
-	#minM <- 0
-	#if (p < minP) minM <- M
-	#minP <- min(p, minP)
-	#c(minP, minM, CPV[minM])
-	c(p, M, CPV[M])
+	#browser()
+	c(p, m, pCA$CPV)
 }
 
-PC <- function(X) {
+PC <- function(X, var.fraction) {
 	eX1 <- eigen(X, symmetric = TRUE)
 	with (eX1, {
-	    rank <- sum(values > 1e-7)
+		rank <- sum(values > 1e-7)
 		values <- values[1:rank]
 		prop.var <- values / sum(values)
 		cum.var <- cumsum(prop.var)
+		M <- min(which(cum.var >= var.fraction))   ### components for which Explained variance fraction is about 85%
+		M2 <- max(which(prop.var > 0.001))
+		M <- min(M, M2)
 	#browser()
-		list(scores = as.matrix(vectors[,1:rank]), importance = cum.var, rank=rank, eig.values=values)
+		list(scores = as.matrix(vectors[,1:M]), CPV = cum.var[M], M = M, eig.values = values[1:M])
 	})
 }
 

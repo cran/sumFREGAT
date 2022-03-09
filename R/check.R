@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 
 check.sumstat <- function(obj, lgt, test = '') {
@@ -98,7 +98,7 @@ detect.cor.file.ext <- function(cor.path, gene) {
 	return(NULL)
 }
 
-get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, gen.var.weights = FALSE, fweights = NULL, rho = FALSE, n = NULL, flip.genotypes = FALSE) {
+get.check.list <- function(test, score.file, anno.type, user.weights = FALSE, gen.var.weights = FALSE, fweights = NULL, rho = FALSE, n = NULL, flip.genotypes = FALSE, mac.threshold = NA) {
 
 	con <- file(score.file, "r")
 	h <- c()
@@ -128,8 +128,11 @@ check.list <- c()
 		check.list <- c(check.list, 'SE.Beta')
 	}
 
-	if (!is.null(fweights) | gen.var.weights == 'af' | (test == 'FLM' & flip.genotypes)) {
-		if (!grepl('Frequency', h, ignore.case = TRUE)) stop ('Allele frequencies not found in input file, consider changing "beta.par" and "gen.var.weights" parameters"')
+	if (!is.null(fweights) | gen.var.weights == 'af' | (test == 'FLM' & flip.genotypes) | !is.na(mac.threshold)) {
+		if (!grepl('Frequency', h, ignore.case = TRUE)) {
+			if (!is.na(mac.threshold)) stop ('Allele frequencies not found in input file, mac.threshold cannot be used')
+			stop ('Allele frequencies not found in input file, consider changing "beta.par" and "gen.var.weights" parameters"')
+		}
 		check.list <- c(check.list, 'AF')
 	}
 

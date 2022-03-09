@@ -51,7 +51,8 @@ output.file.prefix)
 	coefficients as 0 and 1, respectively. Effect sizes from \code{data} will be inverted for variants with effect alleles
 	different from "ALT" alleles in reference data. If presented, "REF" and "ALT" columns from the input data will be used to
 	sort out variants with alleles different from those in reference data. The reference file can also be a source of map data
-	and allele frequencies if they are not present in \code{data}.}
+	and allele frequencies if they are not present in \code{data}. "AF" column in the reference file represents the allele
+	frequency of "ALT" allele.}
 
 	\item{output.file.prefix}{if not set, the input file name will be used as output prefix.}
 

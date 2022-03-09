@@ -178,7 +178,7 @@ SKAT_Optimal_PValue_Davies_Kuonen<-function(pmin.q,param.m,r.all, pmin=NULL, met
 	if (method == 'kuonen') { re<-try(integrate(SKAT_Optimal_Integrate_Func_Kuonen, lower=0, upper=40, subdivisions=1000, pmin.q=pmin.q,param.m=param.m,r.all=r.all,abs.tol = 10^-25), silent = TRUE)
 	} else { re<-try(integrate(SKAT_Optimal_Integrate_Func_Davies, lower=0, upper=40, subdivisions=1000, pmin.q=pmin.q,param.m=param.m,r.all=r.all,acc=acc,lim=lim,abs.tol = 10^-25), silent = TRUE) }
 
-	if(class(re) == "try-error"){
+	if(is(re, "try-error")){
 		re<-SKAT_Optimal_PValue_Liu(pmin.q,param.m,r.all, pmin)
 		return(re)
 	} 

@@ -35,7 +35,8 @@ lim = 1e+6, write.file = FALSE, quiet = FALSE)
 
 ACAT(score.file, gene.file, genes = "all", anno.type = "",
 beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
-gen.var.weights = "none", write.file = FALSE, quiet = FALSE)
+gen.var.weights = "none", mac.threshold = NA, n = NA,
+write.file = FALSE, quiet = FALSE)
 
 BT(score.file, gene.file, genes = "all", cor.path = "cor/",
 anno.type = "", beta.par = c(1, 25), weights.function = NULL,
@@ -120,6 +121,9 @@ anno.type = "", write.file = FALSE, quiet = FALSE)
 	In \code{ACAT()}, the simplest default unweighted test combines P values (Z scores) without any additional info.
 	Scores can be weighted by via gen.var.weights = 'se.beta' or 'af', similarly to SKAT.
 	}
+
+	\item{mac.threshold}{ an integer number. In ACAT, scores with MAC <= 10 will be combined using Burden test. MACs are calculated
+	from MAFs, \code{n} must be set to apply \code{mac.threshold}.}
 
 	\item{method}{the method for computing P value in kernel-based tests. Available methods are "kuonen", "davies" and "hybrid"
 	(see Details). Default = "kuonen".}

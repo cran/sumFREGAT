@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2018) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 prep.score.files <- function(data, reference = 'ref1KG.MAC5.EUR_AF.RData', output.file.prefix) {
 # 'CHROM', 'POS', 'ID', 'EA', 'P', 'BETA', 'EAF'
@@ -14,23 +14,23 @@ prep.score.files <- function(data, reference = 'ref1KG.MAC5.EUR_AF.RData', outpu
 		input.file <- 'scores'
 	}
 
-	colnames(df) <- toupper(colnames(df))
-	v <- which(colnames(df) %in% c('CHR', 'CHROMOSOME'))
+	cn <- toupper(colnames(df))
+	v <- which(cn %in% c('CHR', 'CHROMOSOME', 'CHROM'))
 	if (length(v) == 1) colnames(df)[v] <- 'CHROM'
-	v <- which(colnames(df) %in% c('POSITION', 'POSITIONS', 'MAP'))
+	v <- which(cn %in% c('POSITION', 'POSITIONS', 'MAP', 'POS'))
 	if (length(v) == 1) colnames(df)[v] <- 'POS'
-	v <- which(colnames(df) %in% c('PVALUE', 'PV', 'PVAL', 'P.VALUE', 'P_VALUE'))
+	v <- which(cn %in% c('PVALUE', 'PV', 'PVAL', 'P.VALUE', 'P_VALUE', 'P'))
 	if (length(v) == 1) colnames(df)[v] <- 'P'
-	v <- which(colnames(df) %in% c('RSID', 'RS.ID', 'RS_ID', 'SNP.ID', 'SNP_ID'))
+	v <- which(cn %in% c('RSID', 'RS.ID', 'RS_ID', 'SNP.ID', 'SNP_ID', 'ID'))
 	if (length(v) == 1) colnames(df)[v] <- 'ID'
-	v <- which(colnames(df) == 'EA')
+	v <- which(cn == 'EA')
 	if (length(v) == 1) {
 		colnames(df)[v] <- 'EFFECT.ALLELE'
 		df[, 'EFFECT.ALLELE'] <- toupper(df[, 'EFFECT.ALLELE'])
 		}
 	
 	# ID and PVAL mandatory
-	# others from user file or 1KG
+	# others from user file or reference
 
 	ColNames <- c('ID', 'P')
 	v <- !ColNames %in% colnames(df)

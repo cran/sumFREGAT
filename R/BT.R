@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 sumstat.BT <- function(obj) {
 
 	with(obj, with(df, { # Z, U, w, p.sum
@@ -23,7 +23,7 @@ user.weights = FALSE, write.file = FALSE, quiet = FALSE) {
 
 BT.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/',
 anno.type = '', beta.par = c(1, 25), weights.function = NULL,
-user.weights = FALSE, write.file = FALSE, quiet = FALSE, prob, phred) {
+user.weights = FALSE, write.file = FALSE, quiet = FALSE, prob = NA, phred) {
 
 ############ COMMON CHECKS
 

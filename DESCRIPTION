@@ -1,13 +1,16 @@
 Package: sumFREGAT
 Title: Fast Region-Based Association Tests on Summary Statistics
-Version: 1.2.2
+Version: 1.2.3
 Author: Nadezhda M. Belonogova <belon@bionet.nsc.ru> and 
     Gulnara R. Svishcheva <gulsvi@bionet.nsc.ru>
     with contributions from:
-    Seunggeun Lee (kernel functions), Pierre Lafaye de Micheaux ('davies' method),
+    Seunggeun Lee (kernel functions),
+    Pierre Lafaye de Micheaux ('davies' method),
+    Thomas Lumley ('kuonen' method),
     Minghui Wang, Yiyuan Liu, Shizhong Han (simpleM function), 
-    Yaowu Liu (ACAT function), Thomas Lumley ('kuonen' method),
-    and James O. Ramsay (functional data analysis functions)
+    Yaowu Liu (ACAT function),
+    James O. Ramsay (functional data analysis functions),
+    Xihao Li, Zilin Li, and Han Chen (conception of the STAAR procedure)
 Maintainer: Nadezhda M. Belonogova <belon@bionet.nsc.ru>
 Depends: R (>= 3.0.0)
 Imports: methods, Matrix, splines, seqminer, GBJ
@@ -22,5 +25,5 @@ Description: An adaptation of classical region/gene-based association analysis
 License: GPL-3
 LazyLoad: yes
 NeedsCompilation: yes
-Packaged: 2021-10-17 12:08:05 UTC; lima
-Date/Publication: 2021-10-19 17:30:02 UTC
+Packaged: 2022-03-09 04:12:23 UTC; lima
+Date/Publication: 2022-03-09 10:00:02 UTC

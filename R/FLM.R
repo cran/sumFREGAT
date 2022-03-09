@@ -1,4 +1,4 @@
-# sumFREGAT (2017-2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2017-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
 "%^%" <- function(U, k) {
 	UUU <- eigen(U, symmetric = TRUE)  # UUU = Uvec %*% diag(Uval) %*% t(Uvec)
@@ -50,7 +50,7 @@ Fan = TRUE, reference.matrix = TRUE, fun = 'LH', write.file = FALSE, quiet = FAL
 FLM.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', approximation = TRUE,
 anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
 basis.function = 'fourier', k = 25, order = 4, flip.genotypes = FALSE,
-Fan = TRUE, reference.matrix = TRUE, fun = 'LH', write.file = FALSE, quiet = FALSE, prob, phred) {
+Fan = TRUE, reference.matrix = TRUE, fun = 'LH', write.file = FALSE, quiet = FALSE, prob = NA, phred) {
 
 ############ COMMON CHECKS
 

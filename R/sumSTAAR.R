@@ -1,20 +1,6 @@
-# sumFREGAT (2021) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
+# sumFREGAT (2021-2022) Gulnara R. Svishcheva & Nadezhda M. Belonogova, ICG SB RAS
 
-# FFGAS <- function(score.file, gene.file, genes = 'all', cor.path = 'cor/', tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), 
-# prob.causal = NA, phred = FALSE, n = NA, write.file = FALSE, quiet = FALSE) {
-
-	# do.call(sumSTAAR.int, c(as.list(environment()), staar.output = FALSE))
-
-# }
-
-# sumSTAAR <- function(score.file, gene.file, genes = 'all', cor.path = 'cor/', tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), 
-# prob.causal = paste0('PROB', 1:10), phred = TRUE, n = NA, write.file = FALSE, quiet = FALSE) {
-
-	# do.call(sumSTAAR.int, c(as.list(environment()), staar.output = TRUE))
-
-# }
-
-sumSTAAR <- function(score.file, gene.file, genes = 'all', cor.path = 'cor/', tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), prob.causal = 'all', phred = TRUE, n = NA, approximation = TRUE, write.file = FALSE, staar.output = TRUE, quiet = FALSE) {
+sumSTAAR <- function(score.file, gene.file, genes = 'all', cor.path = 'cor/', tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), prob.causal = 'all', phred = TRUE, n = NA, mac.threshold = NA, approximation = TRUE, write.file = FALSE, staar.output = TRUE, quiet = FALSE) {
 
 if (any(c('PCA', 'FLM') %in% tests) & is.na(n)) stop('n must be set for PCA/FLM analyses') 
 if (length(beta.par.matrix) < 2 & any(c('SKAT', 'SKATO', 'PCA', 'FLM', 'ACAT') %in% tests)) stop ("Please set beta.par.matrix values")
@@ -73,7 +59,7 @@ for (tt in tests) {
 		sumstat.function <- as.function(get(tt))
 	}
 	if (tt == 'ACAT') {
-		my.args0 <- c(my.args0, gen.var.weights = 'af')
+		my.args0 <- c(my.args0, gen.var.weights = 'af', mac.threshold = mac.threshold, n = n, staar = TRUE)
 	} else {
 		my.args0 <- c(my.args0, cor.path = cor.path)
 	}
@@ -115,9 +101,7 @@ for (tt in tests) {
 			if (ncyc == 1) {
 				names.tmp <- c('PROB0')
 			} else {
-				#browser() #check t(pval)
 				pval <- cbind(pval, sapply(1:dim(pval)[1], function(x) ACATO(pval[x, ]))) # combine by annotations
-				#pval <- t(pval)
 				names.tmp <- c('PROB0', prob.causal, 'STAAR')
 			}
 			colnames(pval) <- paste(tt, a1, a2, names.tmp, sep = '.')
@@ -128,7 +112,6 @@ for (tt in tests) {
 		}
 	}
 	if (!staar.output) {
-		#pval.weights.and.prob <- as.matrix(pval.weights.and.prob)
 		pval.tests <- cbind(pval.tests, sapply(1:dim(pval.weights.and.prob)[1], function(x) ACATO(pval.weights.and.prob[x, ])))
 	}
 }
