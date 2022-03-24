@@ -84,12 +84,12 @@ write.file = FALSE, staar.output = TRUE, quiet = FALSE)
 \details{
 The STAAR procedure has been recently proposed by Li et al. (2020) and described in detail therein. It calculates
 a set of P values using a range of gene-based tests, beta distribution weights parameters, and weighting by each of
-10 functional annotations. The P values are then combined using Cauchy method (see \code{ACATO()} function and Liu, Y. et al., (2019)).
+10 functional annotations. The P values are then combined using Cauchy method (see \code{ACATO()} function and Liu, Y. et al., (2019)).
 }
 \value{
 	
 	With \code{staar.output = FALSE} returns a data table with a single P value for each test (combinations of differently weighted and unweighted
-	iterations of the same test) and a total sumSTAAR P value. ACAT-O method is used to combine P values (Liu, Y. et al., 2019).\cr
+	iterations of the same test) and a total sumSTAAR P value. ACAT-O method is used to combine P values (Liu, Y. et al., 2019).\cr
 	
 	If \code{staar.output = TRUE} the function returns a data frame of size (n.genes x (n.tests x n.beta.pars x (n.annotations + 1) + n.tests + 2)) containing P values
 	for combined tests and all individual tests. The output is analogous to that of original STAAR procedure. For example,
@@ -129,7 +129,7 @@ a set of P values using a range of gene-based tests, beta distribution weights p
 }
 \references{
 	Li X., et al. (2020) Dynamic incorporation of multiple in silico functional annotations empowers rare variant association analysis of large whole-genome sequencing studies at scale. Nature Genetics. DOI: 10.1038/s41588-020-0676-4.\cr
-	Liu Y. et al. (2019) ACAT: a fast and powerful p value combination method for rare-variant analysis in sequencing studies. Am. J. Hum. Genet. 104, 410-421.\cr
+	Liu Y. et al. (2019) ACAT: a fast and powerful p value combination method for rare-variant analysis in sequencing studies. Am. J. Hum. Genet. 104, 410-421.\cr
 
 }
 \examples{

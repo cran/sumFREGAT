@@ -62,7 +62,7 @@ reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, qu
 
 PCA.int <- function (score.file, gene.file, genes = 'all', cor.path = 'cor/', approximation = TRUE,
 anno.type = '', n, beta.par = c(1, 1), weights.function = NULL, user.weights = FALSE,
-reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE, prob, phred) {
+reference.matrix = TRUE, fun = 'LH', var.fraction = 0.85, write.file = FALSE, quiet = FALSE, prob = NA, phred) {
 
 ############ COMMON CHECKS
 

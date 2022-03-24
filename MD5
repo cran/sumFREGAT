@@ -1,5 +1,5 @@
 85e3493515d1693a6403e84d2f07a1d1 *ChangeLog
-774139e7e60de3a5471eb4b6609c2bac *DESCRIPTION
+de42cb6795ecafdf4d93d5fdad6e045d *DESCRIPTION
 9a4deb4cc0ed1ce14a026dc5dfaf89ee *NAMESPACE
 0f218baae424562ba558662246f71ec2 *R/ACAT.R
 aa7fa2fc29cb429537fc1b19233c62fd *R/ACATO.R
@@ -7,7 +7,7 @@ aa7fa2fc29cb429537fc1b19233c62fd *R/ACATO.R
 2164bb8bf9b202ca75b2396bf2912318 *R/FLM.R
 e52e67cd00b4c7a49283d2a6a4ac8acf *R/KMTest_Optimal.R
 781b7154fb5209b421b6535c98a10428 *R/Lfd.R
-e8e8d272d581cf6c0e9058aa973d80e4 *R/PCA.R
+15c713810ef50a39fd7572e3ab451b84 *R/PCA.R
 9a45a8fc34e556be856c7bc3fc9bf7f2 *R/SKAT.R
 fe0afbb88df296ac7109cdf5e612aa7b *R/SKATO.R
 ea95878e48e670739a05f45088725294 *R/basisfd.R
@@ -57,11 +57,11 @@ bff2b4bf356f2258c5dc94c22c0ea272 *inst/testfiles/CFH.vcf.gz
 b73441f079965ae4901fd2f3d46fe943 *inst/testfiles/CFH.vcf.gz.tbi
 3226468152cbf05586c70474da54a04a *inst/testfiles/NCBI37.3.geneFile.txt.gz
 9e5130c44b5424d293d59b0de919365e *inst/testfiles/ensembl.hg38.txt
-fd36e8ac9a81830f936262c076a74f98 *man/ACATO.rd
-fb2b8a6cc71d6e9bf4424492b10d7e7f *man/gene-based_test_functions.rd
+630268707462d98898a75415c81fa433 *man/ACATO.rd
+e4f96c2104ba32db442f18877c1b1ee0 *man/gene-based_test_functions.rd
 5ab77750041efb372c9aa47d31cb2bcc *man/prep.score.files.rd
 732732b9c30c2063e9c9a5aa9fb3138d *man/sumFREGAT-package.rd
-229fc8abd5dfe6c809b86bfe7ebfc218 *man/sumSTAAR.rd
+c22143302eed948e98df3f87f46d791a *man/sumSTAAR.rd
 5d665ea1adcc5a6beee355100b27e8d7 *src/qfc.cpp
 13e9781b6f31cbb94822c28e30486518 *src/ruben.cpp
 d7ab75b5f95afb7b5457faa7b7340cbd *src/sumFREGAT_init.c
