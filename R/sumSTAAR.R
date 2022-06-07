@@ -4,6 +4,8 @@ sumSTAAR <- function(score.file, gene.file, genes = 'all', cor.path = 'cor/', te
 
 if (any(c('PCA', 'FLM') %in% tests) & is.na(n)) stop('n must be set for PCA/FLM analyses') 
 if (length(beta.par.matrix) < 2 & any(c('SKAT', 'SKATO', 'PCA', 'FLM', 'ACAT') %in% tests)) stop ("Please set beta.par.matrix values")
+beta.par.matrix <- as.matrix(beta.par.matrix)
+if (all(dim(beta.par.matrix) == c(2, 1))) beta.par.matrix <- t(beta.par.matrix)
 
 if (length(prob.causal) == 1) {
 	if (!is.na(prob.causal)) {
@@ -35,7 +37,7 @@ if (length(prob.causal) == 1) {
 	}
 }
 
-beta.i.0 <- dim(beta.par.matrix)[2]
+beta.i.0 <- dim(beta.par.matrix)[1]
 
 if (staar.output) {
 	pval.all <- c()

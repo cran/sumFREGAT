@@ -1,5 +1,5 @@
-85e3493515d1693a6403e84d2f07a1d1 *ChangeLog
-de42cb6795ecafdf4d93d5fdad6e045d *DESCRIPTION
+48ea65cd9b4811ea8402c41345ea0750 *ChangeLog
+3243bc5be2e6c9d018d606f4fb3c9950 *DESCRIPTION
 9a4deb4cc0ed1ce14a026dc5dfaf89ee *NAMESPACE
 0f218baae424562ba558662246f71ec2 *R/ACAT.R
 aa7fa2fc29cb429537fc1b19233c62fd *R/ACATO.R
@@ -39,7 +39,7 @@ a6933766f3bff7137c0076842797a54c *R/prep.score.files.R
 8c666ec2369fae2eaec8cecf23eac688 *R/rangechk.R
 0d157bd507577874ecef03a6398db103 *R/simpleM.R
 de46e11e58563bca81a5951979e676f5 *R/skat-misc_SKATh.R
-0b0063ab72ff7ea91ae2458f2b6a5ae8 *R/sumSTAAR.R
+5d0fa1bb49f7119cd6cec91b5acc82f6 *R/sumSTAAR.R
 58bf81ff3578f1b3803520d451728391 *R/sumchi.R
 fd0272965881efbdc569320068fec4f9 *inst/testfiles/CFH.RData
 890fb308f48a938e7cdaec1435d00223 *inst/testfiles/CFH.cor
@@ -61,7 +61,7 @@ b73441f079965ae4901fd2f3d46fe943 *inst/testfiles/CFH.vcf.gz.tbi
 e4f96c2104ba32db442f18877c1b1ee0 *man/gene-based_test_functions.rd
 5ab77750041efb372c9aa47d31cb2bcc *man/prep.score.files.rd
 732732b9c30c2063e9c9a5aa9fb3138d *man/sumFREGAT-package.rd
-c22143302eed948e98df3f87f46d791a *man/sumSTAAR.rd
+092a34a97cafa5f041bf91eaae000e2e *man/sumSTAAR.rd
 5d665ea1adcc5a6beee355100b27e8d7 *src/qfc.cpp
 13e9781b6f31cbb94822c28e30486518 *src/ruben.cpp
 d7ab75b5f95afb7b5457faa7b7340cbd *src/sumFREGAT_init.c

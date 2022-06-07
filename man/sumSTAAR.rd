@@ -8,8 +8,8 @@ STAAR procedure developed by Li et al. (2020) adapted to use on summary statisti
 
 sumSTAAR(score.file, gene.file, genes = 'all', cor.path = 'cor/',
 tests = c('BT', 'SKAT', 'ACAT'), beta.par.matrix = rbind(c(1, 1), c(1, 25)), 
-prob.causal = 'all', phred = TRUE, n = NA, mac.threshold = NA, approximation = TRUE,
-write.file = FALSE, staar.output = TRUE, quiet = FALSE)
+prob.causal = 'all', phred = TRUE, n = NA, mac.threshold = NA,
+approximation = TRUE, write.file = FALSE, staar.output = TRUE, quiet = FALSE)
 
 }
 
@@ -128,6 +128,7 @@ a set of P values using a range of gene-based tests, beta distribution weights p
 	sumSTAAR.STAAR_O # combined P value of all gene-based tests\cr
 }
 \references{
+	Belonogova et al. (2022) SumSTAAR: A flexible framework for gene-based association studies using GWAS summary statistics. PLOS Comp Biol. https://doi.org/10.1371/journal.pcbi.1010172
 	Li X., et al. (2020) Dynamic incorporation of multiple in silico functional annotations empowers rare variant association analysis of large whole-genome sequencing studies at scale. Nature Genetics. DOI: 10.1038/s41588-020-0676-4.\cr
 	Liu Y. et al. (2019) ACAT: a fast and powerful p value combination method for rare-variant analysis in sequencing studies. Am. J. Hum. Genet. 104, 410-421.\cr
 

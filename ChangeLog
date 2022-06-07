@@ -10,3 +10,6 @@ sumFREGAT_1.2.1
 
 sumFREGAT_1.2.2
 - 'approximation' option added to speed up the calculations for large genes
+
+sumFREGAT_1.2.3-5
+- technical changes and bug fix
